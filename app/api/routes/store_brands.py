@@ -7,7 +7,10 @@ from app.use_cases.store_brand_use_cases import StoreBrandUseCases
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.postgres_store_brand_repository import PostgresStoreBrandRepository
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/store-brands",
+    tags=["Store Brands"]
+)
 
 async def get_store_brand_use_cases(db: AsyncSession = Depends(get_db)):
     repository = PostgresStoreBrandRepository(db)
