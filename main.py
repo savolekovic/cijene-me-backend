@@ -9,9 +9,9 @@ def custom_openapi():
         return app.openapi_schema
     
     openapi_schema = get_openapi(
-        title="Store Management API",
+        title="Cijene.me API",
         version="1.0.0",
-        description="API for managing store brands and locations",
+        description="Vidjecemo sto odje da stavimo brat moiiii !!",
         routes=app.routes,
     )
     
