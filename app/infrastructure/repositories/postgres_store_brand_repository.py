@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import asc, select
 from typing import List, Optional
-from app.domain.models import StoreBrand
+from app.domain.models.store_brand import StoreBrand
 from app.domain.repositories import StoreBrandRepository
 from app.infrastructure.database.models import StoreBrandModel
 

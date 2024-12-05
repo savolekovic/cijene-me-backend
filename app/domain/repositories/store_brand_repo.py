@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.domain.models import StoreBrand
+
+from app.domain.models.store_brand import StoreBrand
+
 
 class StoreBrandRepository(ABC):
     @abstractmethod
@@ -21,4 +23,4 @@ class StoreBrandRepository(ABC):
     
     @abstractmethod
     async def delete(self, store_brand_id: int) -> bool:
-        pass 
+        pass

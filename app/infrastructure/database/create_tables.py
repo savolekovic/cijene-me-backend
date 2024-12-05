@@ -1,5 +1,5 @@
 from app.infrastructure.database.database import engine, Base
-from app.infrastructure.database.models import StoreBrandModel
+from app.infrastructure.database.models import StoreBrandModel, StoreLocationModel
 import logging
 import asyncio
 

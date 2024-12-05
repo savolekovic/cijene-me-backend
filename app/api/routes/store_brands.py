@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
-from app.domain.models import StoreBrand
+from app.domain.models.store_brand import StoreBrand
+from app.domain.models.user import User
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.postgres_store_brand_repository import PostgresStoreBrandRepository
+from app.api.dependencies.auth import get_current_user
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -14,9 +17,30 @@ router = APIRouter(
     tags=["Store Brands"]
 )
 
-@router.post("/", response_model=StoreBrand)
+# Common response definition
+unauthorized_response = {
+    401: {
+        "description": "Unauthorized - Invalid or missing authentication token",
+        "content": {
+            "application/json": {
+                "example": {"detail": "Could not validate credentials"}
+            }
+        }
+    }
+}
+
+@router.post("/", 
+    response_model=StoreBrand,
+    summary="Create a new store brand",
+    description="Create a new store brand. Requires authentication.",
+    responses=unauthorized_response,
+    openapi_extra={
+        "security": [{"Bearer": []}]
+    }
+)
 async def create_store_brand(
     name: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -37,8 +61,6 @@ async def get_store_brand(
         if not store_brand:
             raise HTTPException(status_code=404, detail="Store brand not found")
         return store_brand
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting store brand: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -54,10 +76,19 @@ async def get_all_store_brands(
         logger.error(f"Error getting all store brands: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/{store_brand_id}", response_model=StoreBrand)
+@router.put("/{store_brand_id}", 
+    response_model=StoreBrand,
+    summary="Update a store brand",
+    description="Update an existing store brand. Requires authentication.",
+    responses=unauthorized_response,
+    openapi_extra={
+        "security": [{"Bearer": []}]
+    }
+)
 async def update_store_brand(
     store_brand_id: int,
     name: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -71,9 +102,17 @@ async def update_store_brand(
         logger.error(f"Error updating store brand: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/{store_brand_id}")
+@router.delete("/{store_brand_id}",
+    summary="Delete a store brand",
+    description="Delete an existing store brand. Requires authentication.",
+    responses=unauthorized_response,
+    openapi_extra={
+        "security": [{"Bearer": []}]
+    }
+)
 async def delete_store_brand(
     store_brand_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
