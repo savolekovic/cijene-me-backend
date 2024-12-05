@@ -1,15 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from uuid import UUID
-from .models import StoreBrand
+from app.domain.models import StoreBrand
 
 class StoreBrandRepository(ABC):
     @abstractmethod
-    async def create(self, store_brand: StoreBrand) -> StoreBrand:
+    async def create(self, name: str) -> StoreBrand:
         pass
     
     @abstractmethod
-    async def get_by_id(self, store_brand_id: UUID) -> Optional[StoreBrand]:
+    async def get(self, store_brand_id: int) -> Optional[StoreBrand]:
         pass
     
     @abstractmethod
@@ -17,9 +16,9 @@ class StoreBrandRepository(ABC):
         pass
     
     @abstractmethod
-    async def update(self, store_brand_id: UUID, store_brand: StoreBrand) -> Optional[StoreBrand]:
+    async def update(self, store_brand_id: int, store_brand: StoreBrand) -> Optional[StoreBrand]:
         pass
     
     @abstractmethod
-    async def delete(self, store_brand_id: UUID) -> bool:
+    async def delete(self, store_brand_id: int) -> bool:
         pass 
