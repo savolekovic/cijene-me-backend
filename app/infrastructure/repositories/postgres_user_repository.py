@@ -4,16 +4,18 @@ from typing import Optional
 from app.domain.models.user import User
 from app.domain.repositories.user_repo import UserRepository
 from app.infrastructure.database.models.user import UserModel
+from app.domain.models.user_role import UserRole
 
 class PostgresUserRepository(UserRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create(self, email: str, username: str, hashed_password: str) -> User:
+    async def create(self, email: str, username: str, hashed_password: str, role: UserRole = UserRole.USER) -> User:
         db_user = UserModel(
             email=email,
             username=username,
-            hashed_password=hashed_password
+            hashed_password=hashed_password,
+            role=role
         )
         self.session.add(db_user)
         await self.session.commit()
@@ -24,6 +26,7 @@ class PostgresUserRepository(UserRepository):
             email=db_user.email,
             username=db_user.username,
             hashed_password=db_user.hashed_password,
+            role=db_user.role,
             created_at=db_user.created_at
         )
 
@@ -38,6 +41,7 @@ class PostgresUserRepository(UserRepository):
                 email=db_user.email,
                 username=db_user.username,
                 hashed_password=db_user.hashed_password,
+                role=db_user.role,
                 created_at=db_user.created_at
             )
         return None
@@ -53,6 +57,7 @@ class PostgresUserRepository(UserRepository):
                 email=db_user.email,
                 username=db_user.username,
                 hashed_password=db_user.hashed_password,
+                role=db_user.role,
                 created_at=db_user.created_at
             )
         return None
