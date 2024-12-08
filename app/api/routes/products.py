@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+from app.core.exceptions import NotFoundError
 from app.domain.models.product import Product, ProductWithCategory
 from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
