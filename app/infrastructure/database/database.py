@@ -2,7 +2,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
 import logging
-from urllib.parse import quote_plus
 import os
 
 # Set up logging
@@ -15,16 +14,24 @@ load_dotenv()
 # Create Base class for models
 Base = declarative_base()
 
-# URL encode the password
-password = quote_plus(os.getenv('DATABASE_PASSWORD', ''))
-DATABASE_URL = f"postgresql+asyncpg://{os.getenv('DATABASE_USER')}:{password}@localhost:5432/{os.getenv('DATABASE_NAME')}"
+# Get database URL from environment
+DATABASE_URL = os.getenv('DATABASE_URL')
 
-logger.info("Attempting to connect to database...")
+if not DATABASE_URL:
+    logger.error("DATABASE_URL environment variable is not set!")
+    raise ValueError("DATABASE_URL environment variable is required")
 
-# Create async engine
+# Convert the URL to asyncpg format if needed
+if DATABASE_URL.startswith('postgresql://'):
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
+
+# Create async engine with SSL config for Neon.tech
 engine = create_async_engine(
     DATABASE_URL,
     echo=True,
+    connect_args={
+        "ssl": True
+    } if "neon.tech" in DATABASE_URL else {}
 )
 
 # Create async session maker
@@ -41,9 +48,3 @@ async def get_db():
             yield session
         finally:
             await session.close()
-
-# Note: Required environment variables:
-# - DATABASE_USER
-# - DATABASE_PASSWORD
-# - DATABASE_HOST
-# - DATABASE_NAME
