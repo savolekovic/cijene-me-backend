@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 import logging
 from app.api.routes import (
     store_brands,
@@ -73,10 +73,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error"}
     )
 
-@app.get("/")
+@app.get("/", response_class=RedirectResponse, status_code=302)
 async def root():
-    return {
-        "message": "Welcome to Cijene.me API",
-        "docs": "/docs",
-        "redoc": "/redoc"
-    }
+    return "/docs"
