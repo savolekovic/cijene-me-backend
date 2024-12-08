@@ -7,7 +7,7 @@ from app.domain.models.store import StoreBrand
 from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.store.postgres_store_brand_repository import PostgresStoreBrandRepository
-from app.api.dependencies.auth import get_current_admin
+from app.api.dependencies.auth import get_current_privileged_user
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError
 
 # Set up logging
@@ -33,7 +33,7 @@ unauthorized_response = {
 @router.post("/", 
     response_model=StoreBrand,
     summary="Create a new store brand",
-    description="Create a new store brand. Requires admin authentication.",
+    description="Create a new store brand. Requires admin or mediator role.",
     responses=unauthorized_response,
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -41,7 +41,7 @@ unauthorized_response = {
 )
 async def create_store_brand(
     name: str,
-    current_user: User = Depends(get_current_admin),
+    current_user: User = Depends(get_current_privileged_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -49,7 +49,7 @@ async def create_store_brand(
         return await repository.create(name)
     except Exception as e:
         logger.error(f"Error creating store brand: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise
 
 @router.get("/{store_brand_id}", response_model=StoreBrand)
 async def get_store_brand(
@@ -86,7 +86,7 @@ async def get_all_store_brands(
 async def update_store_brand(
     store_brand_id: int,
     name: str,
-    current_user: User = Depends(get_current_admin),
+    current_user: User = Depends(get_current_privileged_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -110,7 +110,7 @@ async def update_store_brand(
 )
 async def delete_store_brand(
     store_brand_id: int,
-    current_user: User = Depends(get_current_admin),
+    current_user: User = Depends(get_current_privileged_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:

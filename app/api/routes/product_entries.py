@@ -6,8 +6,7 @@ from app.domain.models.product import ProductEntry
 from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.product.postgres_product_entry_repository import PostgresProductEntryRepository
-from app.api.dependencies.auth import get_current_user
-from app.core.exceptions import DatabaseError, NotFoundError, ValidationError
+from app.api.dependencies.auth import get_current_privileged_user
 
 router = APIRouter(
     prefix="/product-entries",
@@ -17,16 +16,10 @@ router = APIRouter(
 @router.post("/", 
     response_model=ProductEntry,
     summary="Create a new product entry",
-    description="Create a new product price entry. Requires authentication.",
+    description="Create a new product price entry. Requires admin or mediator role.",
     responses={
-        401: {
-            "description": "Unauthorized - Invalid or missing authentication token",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Could not validate credentials"}
-                }
-            }
-        }
+        401: {"description": "Unauthorized"},
+        403: {"description": "Forbidden - Insufficient privileges"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -37,7 +30,7 @@ async def create_product_entry(
     store_brand_id: int,
     store_location_id: int,
     price: Decimal,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_privileged_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -55,6 +48,7 @@ async def create_product_entry(
 async def get_all_product_entries(
     db: AsyncSession = Depends(get_db)
 ):
+    """Get all product entries. Public endpoint."""
     try:
         repository = PostgresProductEntryRepository(db)
         return await repository.get_all()
@@ -66,6 +60,7 @@ async def get_product_entries_by_product(
     product_id: int,
     db: AsyncSession = Depends(get_db)
 ):
+    """Get all price entries for a specific product. Public endpoint."""
     try:
         repository = PostgresProductEntryRepository(db)
         return await repository.get_by_product(product_id)
@@ -77,6 +72,7 @@ async def get_product_entries_by_store_brand(
     store_brand_id: int,
     db: AsyncSession = Depends(get_db)
 ):
+    """Get all price entries for a specific store brand. Public endpoint."""
     try:
         repository = PostgresProductEntryRepository(db)
         return await repository.get_by_store_brand(store_brand_id)
@@ -88,6 +84,7 @@ async def get_product_entries_by_store_location(
     store_location_id: int,
     db: AsyncSession = Depends(get_db)
 ):
+    """Get all price entries for a specific store location. Public endpoint."""
     try:
         repository = PostgresProductEntryRepository(db)
         return await repository.get_by_store_location(store_location_id)
@@ -99,6 +96,7 @@ async def get_product_entry(
     entry_id: int,
     db: AsyncSession = Depends(get_db)
 ):
+    """Get a specific price entry by ID. Public endpoint."""
     try:
         repository = PostgresProductEntryRepository(db)
         return await repository.get(entry_id)

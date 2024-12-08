@@ -14,7 +14,6 @@ class UserCreate(BaseModel):
     email: EmailStr
     username: str
     password: str
-    role: UserRole = UserRole.USER
 
 class UserLogin(BaseModel):
     email: EmailStr
