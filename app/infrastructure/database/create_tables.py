@@ -1,5 +1,7 @@
 from app.infrastructure.database.database import engine, Base
-from app.infrastructure.database.models import StoreBrandModel, StoreLocationModel
+from app.infrastructure.database.models.auth import UserModel
+from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
+from app.infrastructure.database.models.product import CategoryModel, ProductModel, ProductEntryModel
 import logging
 import asyncio
 

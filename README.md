@@ -1,6 +1,6 @@
-# Store Brands API
+# Cijene.me API
 
-A FastAPI application for managing store brands with CRUD operations.
+A FastAPI application for managing store brands, locations, products and prices.
 
 ## Prerequisites
 
@@ -8,7 +8,7 @@ A FastAPI application for managing store brands with CRUD operations.
 - PostgreSQL installed and running
 - Git (optional)
 
-## Setup Instructions for Windows
+## Setup Instructions
 
 ### 1. Create Virtual Environment
 Open Command Prompt in your project directory and run:
@@ -35,6 +35,8 @@ DATABASE_USER=your_username
 DATABASE_PASSWORD=your_password
 DATABASE_HOST=localhost
 DATABASE_NAME=store_brands_db
+JWT_SECRET_KEY=your-secret-key
+JWT_REFRESH_SECRET_KEY=your-refresh-key
 
 ### 5. Start the Application
 Make sure virtual environment is activated (`(venv)` shows in prompt), then run:
@@ -71,11 +73,46 @@ fastapi-tutorial/
 
 ## API Endpoints
 
+### Authentication
+- `POST /auth/register` - Register new user
+- `POST /auth/token` - Login and get access token
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout user
+- `GET /auth/me` - Get current user info
+
+### Store Brands (Admin Only)
 - `POST /store-brands` - Create new store brand
 - `GET /store-brands` - List all store brands
 - `GET /store-brands/{store_brand_id}` - Get specific store brand
 - `PUT /store-brands/{store_brand_id}` - Update store brand
 - `DELETE /store-brands/{store_brand_id}` - Delete store brand
+
+### Store Locations
+- `POST /store-locations` - Create new store location
+- `GET /store-locations` - List all store locations
+- `GET /store-locations/{location_id}` - Get specific location
+- `PUT /store-locations/{location_id}` - Update store location
+- `DELETE /store-locations/{location_id}` - Delete store location
+
+### Categories
+- `GET /categories` - List all categories
+- `GET /categories/{category_id}` - Get specific category
+
+### Products
+- `GET /products` - List all products with categories
+- `GET /products/{product_id}` - Get specific product
+
+### Product Entries (Prices)
+- `POST /product-entries` - Create new price entry
+- `GET /product-entries` - List all price entries
+- `GET /product-entries/{entry_id}` - Get specific price entry
+- `GET /product-entries/product/{product_id}` - Get prices by product
+- `GET /product-entries/store-brand/{store_brand_id}` - Get prices by store brand
+- `GET /product-entries/store-location/{store_location_id}` - Get prices by location
+
+## Documentation
+- API Documentation: http://localhost:8000/docs
+- Alternative Documentation: http://localhost:8000/redoc
 
 ## Important Notes
 

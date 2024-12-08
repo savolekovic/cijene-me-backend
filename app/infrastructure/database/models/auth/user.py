@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer, Enum
 from datetime import datetime
 from app.infrastructure.database.database import Base
-from app.domain.models.user_role import UserRole
+from app.domain.models.auth.user_role import UserRole
 
 class UserModel(Base):
     __tablename__ = "users"

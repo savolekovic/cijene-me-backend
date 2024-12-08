@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
-from app.domain.models.store_brand import StoreBrand
+from app.domain.models.store.store_brand import StoreBrand
 
 
 class StoreBrandRepository(ABC):

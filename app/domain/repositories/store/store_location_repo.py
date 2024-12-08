@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.domain.models.store_location import StoreLocation
+from app.domain.models.store.store_location import StoreLocation
 
 
 class StoreLocationRepository(ABC):

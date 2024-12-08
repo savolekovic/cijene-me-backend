@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, asc
 from typing import List, Optional
-from app.domain.models.store_location import StoreLocation
+from app.domain.models.store.store_location import StoreLocation
 from app.domain.repositories import StoreLocationRepository
-from app.infrastructure.database.models import StoreLocationModel, StoreBrandModel
+from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 
 class PostgresStoreLocationRepository(StoreLocationRepository):
     def __init__(self, session: AsyncSession):

@@ -3,10 +3,10 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
-from app.domain.models.store_location import StoreLocation
-from app.domain.models.user import User
+from app.domain.models.store import StoreLocation
+from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
-from app.infrastructure.repositories.postgres_store_location_repository import PostgresStoreLocationRepository
+from app.infrastructure.repositories.store.postgres_store_location_repository import PostgresStoreLocationRepository
 from app.api.dependencies.auth import get_current_user
 
 router = APIRouter(

@@ -1,6 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
-from app.api.routes import store_brands, store_locations, auth
+from fastapi.responses import JSONResponse
+import logging
+from app.api.routes import (
+    store_brands,
+    store_locations,
+    auth,
+    categories,
+    products,
+    product_entries
+)
+from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
 
 app = FastAPI()
 
@@ -11,7 +21,7 @@ def custom_openapi():
     openapi_schema = get_openapi(
         title="Cijene.me API",
         version="1.0.0",
-        description="Vidjecemo sto odje da stavimo brat moiiii !!",
+        description="API for managing store brands, locations, products and prices",
         routes=app.routes,
     )
     
@@ -30,6 +40,35 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# Auth routes
+app.include_router(auth.router)
+
+# Store management routes
 app.include_router(store_brands.router)
 app.include_router(store_locations.router)
-app.include_router(auth.router)
+
+# Product management routes
+app.include_router(categories.router)
+app.include_router(products.router)
+app.include_router(product_entries.router)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Log the error with traceback
+    logging.error(
+        f"Unhandled error on endpoint {request.url}",
+        exc_info=exc
+    )
+    
+    # Return appropriate response based on exception type
+    if isinstance(exc, (DatabaseError, NotFoundError, ValidationError, AuthenticationError)):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+    
+    # Generic error for unexpected exceptions
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )

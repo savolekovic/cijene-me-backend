@@ -3,11 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 import logging
-from app.domain.models.store_brand import StoreBrand
-from app.domain.models.user import User
+from app.domain.models.store import StoreBrand
+from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
-from app.infrastructure.repositories.postgres_store_brand_repository import PostgresStoreBrandRepository
-from app.api.dependencies.auth import get_current_user
+from app.infrastructure.repositories.store.postgres_store_brand_repository import PostgresStoreBrandRepository
+from app.api.dependencies.auth import get_current_admin
+from app.core.exceptions import DatabaseError, NotFoundError, ValidationError
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ unauthorized_response = {
 @router.post("/", 
     response_model=StoreBrand,
     summary="Create a new store brand",
-    description="Create a new store brand. Requires authentication.",
+    description="Create a new store brand. Requires admin authentication.",
     responses=unauthorized_response,
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -40,7 +41,7 @@ unauthorized_response = {
 )
 async def create_store_brand(
     name: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -57,13 +58,10 @@ async def get_store_brand(
 ):
     try:
         repository = PostgresStoreBrandRepository(db)
-        store_brand = await repository.get(store_brand_id)
-        if not store_brand:
-            raise HTTPException(status_code=404, detail="Store brand not found")
-        return store_brand
+        return await repository.get(store_brand_id)
     except Exception as e:
         logger.error(f"Error getting store brand: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise  # Let the global handler deal with it
 
 @router.get("/", response_model=List[StoreBrand])
 async def get_all_store_brands(
@@ -88,7 +86,7 @@ async def get_all_store_brands(
 async def update_store_brand(
     store_brand_id: int,
     name: str,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -112,7 +110,7 @@ async def update_store_brand(
 )
 async def delete_store_brand(
     store_brand_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     try:

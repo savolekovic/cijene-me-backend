@@ -1,10 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
-from app.domain.models.user import User
-from app.domain.repositories.user_repo import UserRepository
-from app.infrastructure.database.models.user import UserModel
-from app.domain.models.user_role import UserRole
+from app.domain.models.auth.user import User
+from app.domain.repositories.auth.user_repo import UserRepository
+from app.infrastructure.database.models.auth import UserModel
+from app.domain.models.auth.user_role import UserRole
 
 class PostgresUserRepository(UserRepository):
     def __init__(self, session: AsyncSession):

@@ -2,9 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import timedelta
-from app.domain.models.user import User, UserCreate, Token
+from app.domain.models.auth import User, UserCreate, Token
 from app.infrastructure.database.database import get_db
-from app.infrastructure.repositories.postgres_user_repository import PostgresUserRepository
+from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService, ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(
@@ -37,17 +37,23 @@ async def register(
     repository = PostgresUserRepository(db)
     auth_service = AuthService(repository)
     
+    try:
+        # This will now validate password complexity
+        hashed_password = auth_service.get_password_hash(user_create.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
     # Check if user exists
     existing_user = await repository.get_by_email(user_create.email)
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
     # Create new user
-    hashed_password = auth_service.get_password_hash(user_create.password)
     user = await repository.create(
         email=user_create.email,
         username=user_create.username,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        role=user_create.role
     )
     return user
 
@@ -68,7 +74,7 @@ async def login(
         )
     
     # Create both access and refresh tokens
-    access_token = auth_service.create_access_token(user.id)
+    access_token = auth_service.create_access_token(user.id, user.role)
     refresh_token = auth_service.create_refresh_token(user.id)
     
     # Store refresh token in database

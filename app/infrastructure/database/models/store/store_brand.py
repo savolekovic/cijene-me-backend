@@ -12,3 +12,4 @@ class StoreBrandModel(Base):
     
     # Add relationship
     locations = relationship("StoreLocationModel", back_populates="store_brand")
+    product_entries = relationship("ProductEntryModel", back_populates="store_brand")
