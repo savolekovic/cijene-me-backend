@@ -5,19 +5,20 @@ from app.domain.models.auth import User, UserRole
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.api.dependencies.auth import get_current_user, get_current_admin
+from app.domain.models.auth.user import UserResponse
 
 router = APIRouter(
     prefix="/users",
     tags=["Users"]  # Separate tag for Users
 )
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserResponse)
 async def read_users_me(
     current_user: User = Depends(get_current_user)
 ):
     return current_user
 
-@router.get("/", response_model=List[User])
+@router.get("/", response_model=List[UserResponse])
 async def get_all_users(
     current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)

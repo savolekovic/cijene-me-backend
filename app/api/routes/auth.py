@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_user
 from app.core.exceptions import DatabaseError, ValidationError
-from app.domain.models.auth import User, UserCreate, Token, UserRole, UserLogin
+from app.domain.models.auth import User, UserCreate, Token, UserRole, UserLogin, UserResponse
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService
@@ -30,7 +30,7 @@ async def get_current_user(
         )
     return user
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserResponse)
 async def register(
     user_create: UserCreate,
     db: AsyncSession = Depends(get_db)
@@ -42,8 +42,8 @@ async def register(
     if not user_create.email or "@" not in user_create.email:
         raise ValidationError("Invalid email format")
     
-    # Check if user exists
-    existing_user = await repository.get_by_email(user_create.email)
+    # Check if user exists first
+    existing_user = await repository.get_by_email(user_create.email.lower())
     if existing_user:
         raise ValidationError("Email already registered")
     
