@@ -86,15 +86,44 @@ async def register(
     response_model=Token,
     summary="Login user",
     description="Login with email and password. Returns access and refresh tokens.",
+    include_in_schema=True,
     responses={
-        200: {"description": "Successfully logged in"},
-        401: {
-            "description": "Authentication failed",
+        200: {
+            "description": "Successfully logged in",
             "content": {
                 "application/json": {
-                    "example": {"error": "Validation error", "message": "Incorrect email or password"}
+                    "example": {
+                        "access_token": "eyJhbGc...",
+                        "refresh_token": "eyJhbG..."
+                    }
                 }
             }
+        },
+        400: {
+            "description": "Bad Request",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "invalid_credentials": {
+                            "value": {
+                                "error": "Validation error",
+                                "message": "Incorrect email or password"
+                            }
+                        },
+                        "invalid_email": {
+                            "value": {
+                                "error": "Validation error",
+                                "message": "Enter a valid email address."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    openapi_extra={
+        "responses": {
+            "422": None
         }
     }
 )
