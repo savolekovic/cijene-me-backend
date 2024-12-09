@@ -35,7 +35,8 @@ from app.api.routes import (
     users,
     categories,
     products,
-    product_entries
+    product_entries,
+    health
 )
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
 
@@ -87,6 +88,7 @@ app.include_router(store_locations.router)
 app.include_router(categories.router)
 app.include_router(products.router)
 app.include_router(product_entries.router)
+app.include_router(health.router)
 
 # Exception handlers
 @app.exception_handler(RequestValidationError)

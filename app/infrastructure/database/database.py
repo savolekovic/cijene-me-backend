@@ -41,7 +41,11 @@ if ENV == 'production':
     engine = create_async_engine(
         DATABASE_URL,
         echo=True,
-        connect_args={"ssl": True}
+        connect_args={
+            "ssl": {
+                "ssl_cert_reqs": "CERT_NONE"  # Add this for Render
+            }
+        }
     )
 else:
     # Local development database
