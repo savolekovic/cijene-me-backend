@@ -14,7 +14,34 @@ from app.api.routes import (
 )
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
 
-app = FastAPI()
+app = FastAPI(
+    responses={
+        422: {
+            "description": "Validation Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Validation error",
+                        "message": "Enter a valid email address."
+                    },
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "error": {
+                                "type": "string",
+                                "example": "Validation error"
+                            },
+                            "message": {
+                                "type": "string",
+                                "example": "Enter a valid email address."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+)
 
 def custom_openapi():
     if app.openapi_schema:
