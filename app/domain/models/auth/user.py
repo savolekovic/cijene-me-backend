@@ -1,5 +1,6 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, constr
+from typing import Annotated
 from .user_role import UserRole
 
 class User(BaseModel):
@@ -12,8 +13,17 @@ class User(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    username: str
+    username: Annotated[str, constr(min_length=3, max_length=50, strip_whitespace=True)]
     password: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "username": "johndoe",
+                "password": "StrongP@ss123"
+            }
+        }
 
 class UserLogin(BaseModel):
     email: EmailStr

@@ -21,7 +21,7 @@ def custom_openapi():
     openapi_schema = get_openapi(
         title="Cijene.me API",
         version="1.0.0",
-        description="API for managing store brands, locations, products and prices",
+        description="Odje treba napisati opis API-ja",
         routes=app.routes,
     )
     
