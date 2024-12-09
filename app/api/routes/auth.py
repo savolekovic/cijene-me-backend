@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import timedelta
 from app.api.dependencies.auth import get_current_admin
+from app.core.exceptions import DatabaseError
 from app.domain.models.auth import User, UserCreate, Token, UserRole
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
@@ -36,30 +38,39 @@ async def register(
     user_create: UserCreate,
     db: AsyncSession = Depends(get_db)
 ):
-    # No auth needed - public endpoint for registration
-    # Role is forced to USER
     repository = PostgresUserRepository(db)
     auth_service = AuthService(repository)
     
+    # Validate email format
+    if not user_create.email or "@" not in user_create.email:
+        raise ValidationError("Invalid email format")
+    
+    # Validate username
+    if not user_create.username:
+        raise ValidationError("Username cannot be empty")
+    
+    # Validate password
     try:
-        # This will now validate password complexity
         hashed_password = auth_service.get_password_hash(user_create.password)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise ValidationError(str(e))
     
     # Check if user exists
     existing_user = await repository.get_by_email(user_create.email)
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise ValidationError("Email already registered")
     
-    # Force user role for registration
-    user = await repository.create(
-        email=user_create.email,
-        username=user_create.username,
-        hashed_password=hashed_password,
-        role=UserRole.USER  # Always set to USER role
-    )
-    return user
+    # Create user with validated data
+    try:
+        user = await repository.create(
+            email=user_create.email.lower(),  # Store email in lowercase
+            username=user_create.username.strip(),  # Remove whitespace
+            hashed_password=hashed_password,
+            role=UserRole.USER
+        )
+        return user
+    except Exception as e:
+        raise DatabaseError(str(e))
 
 @router.post("/token", response_model=Token, include_in_schema=False)
 async def login(
