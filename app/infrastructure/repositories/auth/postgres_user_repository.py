@@ -1,10 +1,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional
+from typing import Optional, List
 from app.domain.models.auth.user import User
 from app.domain.repositories.auth.user_repo import UserRepository
 from app.infrastructure.database.models.auth import UserModel
 from app.domain.models.auth.user_role import UserRole
+from sqlalchemy import asc
+from app.core.exceptions import DatabaseError
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PostgresUserRepository(UserRepository):
     def __init__(self, session: AsyncSession):
@@ -70,3 +75,24 @@ class PostgresUserRepository(UserRepository):
         if db_user:
             db_user.refresh_token = refresh_token
             await self.session.commit()
+
+    async def get_all(self) -> List[User]:
+        try:
+            query = select(UserModel).order_by(asc(UserModel.id))
+            result = await self.session.execute(query)
+            db_users = result.scalars().all()
+            
+            return [
+                User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    hashed_password=user.hashed_password,
+                    role=user.role,
+                    created_at=user.created_at
+                )
+                for user in db_users
+            ]
+        except Exception as e:
+            logger.error(f"Error getting all users: {str(e)}")
+            raise DatabaseError(f"Failed to get users: {str(e)}")

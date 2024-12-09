@@ -6,6 +6,10 @@ from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.api.dependencies.auth import get_current_user, get_current_admin
 from app.domain.models.responses.auth_responses import UserResponse
+from app.infrastructure.database.database import DatabaseError
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/users",
@@ -53,53 +57,33 @@ async def read_users_me(
 @router.get("/", 
     response_model=List[UserResponse],
     responses={
-        200: {
-            "description": "List of all users",
-            "content": {
-                "application/json": {
-                    "example": [{
-                        "id": 1,
-                        "email": "user@example.com",
-                        "full_name": "John Doe",
-                        "role": "user",
-                        "created_at": "2024-01-08T12:00:00"
-                    }]
-                }
-            }
-        },
-        401: {
-            "description": "Not authenticated",
+        200: {"description": "List of all users"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Not enough privileges"},
+        500: {
+            "description": "Database error",
             "content": {
                 "application/json": {
                     "example": {
-                        "error": "Authentication error",
-                        "message": "Not authenticated"
-                    }
-                }
-            }
-        },
-        403: {
-            "description": "Not enough privileges",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Authorization error",
-                        "message": "Admin privileges required"
+                        "error": "Database error",
+                        "message": "Failed to get users"
                     }
                 }
             }
         }
     },
-    openapi_extra={
-        "security": [{"Bearer": []}]
-    }
+    openapi_extra={"security": [{"Bearer": []}]}
 )
 async def get_all_users(
     current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    repository = PostgresUserRepository(db)
-    return await repository.get_all()
+    try:
+        repository = PostgresUserRepository(db)
+        return await repository.get_all()
+    except Exception as e:
+        logger.error(f"Error in get_all_users: {str(e)}")
+        raise DatabaseError(str(e))
 
 @router.put("/{user_id}/role", 
     response_model=UserResponse,
