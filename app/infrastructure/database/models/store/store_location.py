@@ -7,11 +7,10 @@ class StoreLocationModel(Base):
     __tablename__ = "store_locations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    store_brand_id = Column(Integer, ForeignKey("store_brands.id", ondelete="CASCADE"), nullable=False)
+    store_brand_id = Column(Integer, ForeignKey("store_brands.id"), nullable=False)
     address = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Add relationship
     store_brand = relationship("StoreBrandModel", back_populates="locations")
-    product_entries = relationship("ProductEntryModel", back_populates="store_location")
   

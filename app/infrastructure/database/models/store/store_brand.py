@@ -9,7 +9,6 @@ class StoreBrandModel(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
-    # Add relationship
+
+    # Relationships
     locations = relationship("StoreLocationModel", back_populates="store_brand")
-    product_entries = relationship("ProductEntryModel", back_populates="store_brand")
