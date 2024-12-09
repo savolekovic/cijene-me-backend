@@ -19,7 +19,8 @@ async def read_users_me(
 
 @router.get("/", response_model=List[User])
 async def get_all_users(
-    current_user: User = Depends(get_current_admin)
+    current_user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
 ):
     repository = PostgresUserRepository(db)
     return await repository.get_all()
