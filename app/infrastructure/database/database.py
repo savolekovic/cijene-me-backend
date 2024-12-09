@@ -37,13 +37,16 @@ if ENV == 'production':
     if DATABASE_URL.startswith('postgresql://'):
         DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
     
+    # Log the connection attempt (without password)
+    safe_url = DATABASE_URL.split('@')[1]
+    logger.info(f"Connecting to production database: {safe_url}")
+    
     # Create engine with SSL for production
     engine = create_async_engine(
         DATABASE_URL,
         echo=True,
         connect_args={
-            "ssl": True,
-            "sslmode": "require"
+            "ssl": True
         }
     )
 else:
