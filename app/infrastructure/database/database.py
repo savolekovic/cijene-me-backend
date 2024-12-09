@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import logging
 import os
 from urllib.parse import quote_plus
+import ssl
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -47,17 +48,16 @@ if ENV == 'production':
     safe_url = DATABASE_URL.split('@')[1]
     logger.info(f"Connecting to production database: {safe_url}")
     
+    # Create SSL context
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
     # Create engine with SSL for production
     engine = create_async_engine(
         DATABASE_URL,
         echo=False,
-        connect_args={
-            "ssl": {
-                "mode": "require",
-                "check_hostname": False,
-                "verify_ca": False
-            }
-        }
+        connect_args={"ssl": ssl_context}
     )
 else:
     # Local development database
