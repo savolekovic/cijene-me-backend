@@ -11,6 +11,7 @@ class StoreLocationModel(Base):
     address = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=get_current_time)
     
-    # Add relationship
+    # Add relationships
     store_brand = relationship("StoreBrandModel", back_populates="locations")
+    product_entries = relationship("ProductEntryModel", back_populates="store_location")
   
