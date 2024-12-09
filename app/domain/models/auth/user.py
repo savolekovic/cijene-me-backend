@@ -55,13 +55,3 @@ class UserLogin(BaseModel):
                 "password": "StrongP@ss123"
             }
         }
-
-class UserResponse(BaseModel):
-    id: int | None = None
-    email: EmailStr
-    full_name: str
-    role: UserRole
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
