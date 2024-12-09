@@ -165,7 +165,6 @@ async def global_exception_handler(request: Request, exc: Exception):
             "message": "Internal server error"
         }
     )
-
-@app.get("/", response_class=RedirectResponse, status_code=302)
+@app.get("/", response_class=RedirectResponse, status_code=302, include_in_schema=False)
 async def root():
     return "/docs"
