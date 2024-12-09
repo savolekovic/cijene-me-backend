@@ -12,3 +12,7 @@ __pycache__/
 
 # Scripts Directory
 scripts/
+
+# Backup
+backup.sql
+

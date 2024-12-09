@@ -1,6 +1,5 @@
 from sqlalchemy import Column, String, DateTime, Integer, Enum
-from datetime import datetime
-from app.infrastructure.database.database import Base
+from app.infrastructure.database.database import Base, get_current_time
 from app.domain.models.auth.user_role import UserRole
 
 class UserModel(Base):
@@ -12,4 +11,4 @@ class UserModel(Base):
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.USER)
     refresh_token = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow) 
+    created_at = Column(DateTime(timezone=True), default=get_current_time) 

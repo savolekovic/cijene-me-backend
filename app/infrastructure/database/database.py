@@ -1,3 +1,5 @@
+from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
@@ -17,6 +19,13 @@ Base = declarative_base()
 
 # Get environment
 ENV = os.getenv('ENV', 'development')  # Default to development if not specified
+
+# Define timezone constant - Montenegro is UTC+1 (or UTC+2 in summer)
+TIMEZONE_OFFSET = timedelta(hours=1)  # or hours=2 during summer time
+
+def get_current_time():
+    """Get current time in Montenegro timezone"""
+    return datetime.now(timezone(TIMEZONE_OFFSET))
 
 if ENV == 'production':
     # Use Neon.tech database URL

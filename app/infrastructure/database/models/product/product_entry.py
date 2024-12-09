@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, DECIMAL
 from sqlalchemy.orm import relationship
-from datetime import datetime
-from app.infrastructure.database.database import Base
+from app.infrastructure.database.database import Base, get_current_time
 
 class ProductEntryModel(Base):
     __tablename__ = "product_entries"
@@ -11,7 +10,7 @@ class ProductEntryModel(Base):
     store_brand_id = Column(Integer, ForeignKey("store_brands.id", ondelete="CASCADE"), nullable=False)
     store_location_id = Column(Integer, ForeignKey("store_locations.id", ondelete="CASCADE"), nullable=False)
     price = Column(DECIMAL(10, 2), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=get_current_time)
     
     # Add relationships
     product = relationship("ProductModel", back_populates="product_entries")
