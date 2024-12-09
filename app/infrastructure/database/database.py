@@ -18,7 +18,8 @@ load_dotenv()
 Base = declarative_base()
 
 # Get environment
-ENV = os.getenv('ENV', 'development')  # Default to development if not specified
+ENV = os.getenv('ENV', 'production')  # Default to development if not specified
+logger.info(f"Current environment: {ENV}")
 
 # Define timezone constant - Montenegro is UTC+1 (or UTC+2 in summer)
 TIMEZONE_OFFSET = timedelta(hours=1)  # or hours=2 during summer time
