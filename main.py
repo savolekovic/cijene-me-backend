@@ -40,7 +40,17 @@ app = FastAPI(
                 }
             }
         }
-    }
+    },
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "Endpoints for user authentication and authorization"
+        },
+        {
+            "name": "Users",
+            "description": "Endpoints for user management and profile operations"
+        }
+    ]
 )
 
 def custom_openapi():

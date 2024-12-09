@@ -18,36 +18,8 @@ router = APIRouter(
 
 @router.get("/me", 
     response_model=UserResponse,
-    responses={
-        200: {
-            "description": "Current user information",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "id": 1,
-                        "email": "user@example.com",
-                        "full_name": "John Doe",
-                        "role": "user",
-                        "created_at": "2024-01-08T12:00:00"
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "Not authenticated",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Authentication error",
-                        "message": "Not authenticated"
-                    }
-                }
-            }
-        }
-    },
-    openapi_extra={
-        "security": [{"Bearer": []}]
-    }
+    summary="Get current user",
+    description="Get details of currently authenticated user. Requires authentication.",
 )
 async def read_users_me(
     current_user: User = Depends(get_current_user)
@@ -56,23 +28,8 @@ async def read_users_me(
 
 @router.get("/", 
     response_model=List[UserResponse],
-    responses={
-        200: {"description": "List of all users"},
-        401: {"description": "Not authenticated"},
-        403: {"description": "Not enough privileges"},
-        500: {
-            "description": "Database error",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Database error",
-                        "message": "Failed to get users"
-                    }
-                }
-            }
-        }
-    },
-    openapi_extra={"security": [{"Bearer": []}]}
+    summary="Get all users",
+    description="Get list of all users. Requires admin privileges.",
 )
 async def get_all_users(
     current_user: User = Depends(get_current_admin),
@@ -87,39 +44,21 @@ async def get_all_users(
 
 @router.put("/{user_id}/role", 
     response_model=UserResponse,
+    summary="Update user role",
+    description="""
+    Update role of a specific user. Requires admin privileges.
+    Note: Admin cannot assign ADMIN role to other users.
+    Available roles: USER, MEDIATOR, ADMIN
+    """,
     responses={
-        200: {
-            "description": "User role updated successfully",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "id": 1,
-                        "email": "user@example.com",
-                        "full_name": "John Doe",
-                        "role": "mediator",
-                        "created_at": "2024-01-08T12:00:00"
-                    }
-                }
-            }
-        },
-        401: {
-            "description": "Not authenticated",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Authentication error",
-                        "message": "Not authenticated"
-                    }
-                }
-            }
-        },
+        200: {"description": "Role updated successfully"},
         403: {
-            "description": "Not enough privileges",
+            "description": "Permission denied",
             "content": {
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Admin privileges required"
+                        "message": "Cannot assign ADMIN role to other users"
                     }
                 }
             }
@@ -130,14 +69,11 @@ async def get_all_users(
                 "application/json": {
                     "example": {
                         "error": "Not found",
-                        "message": "User with id 1 not found"
+                        "message": "User with id {id} not found"
                     }
                 }
             }
         }
-    },
-    openapi_extra={
-        "security": [{"Bearer": []}]
     }
 )
 async def update_user_role(
