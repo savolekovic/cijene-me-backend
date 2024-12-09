@@ -1,6 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr, constr, field_validator
-from typing import Annotated
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from .user_role import UserRole
 from app.core.exceptions import ValidationError
 

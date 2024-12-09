@@ -1,4 +1,4 @@
-from .user import User, UserCreate, UserLogin, UserResponse
+from .user import User, UserCreate, UserLogin
 from .token import Token, TokenPayload
 from .user_role import UserRole
 
