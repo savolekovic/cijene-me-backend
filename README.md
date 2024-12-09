@@ -8,7 +8,12 @@ A FastAPI application for managing store brands, locations, products and prices.
 - PostgreSQL installed and running
 - Git (optional)
 
-## Setup Instructions
+## Environment Setup
+
+The application supports two environments: development (local) and production (Neon.tech).
+
+### Development Environment
+1. Create `.env.development`:
 
 ### 1. Create Virtual Environment
 Open Command Prompt in your project directory and run:
