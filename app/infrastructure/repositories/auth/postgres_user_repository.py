@@ -10,10 +10,10 @@ class PostgresUserRepository(UserRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create(self, email: str, username: str, hashed_password: str, role: UserRole = UserRole.USER) -> User:
+    async def create(self, email: str, full_name: str, hashed_password: str, role: UserRole = UserRole.USER) -> User:
         db_user = UserModel(
             email=email,
-            username=username,
+            full_name=full_name,
             hashed_password=hashed_password,
             role=role
         )
@@ -24,7 +24,7 @@ class PostgresUserRepository(UserRepository):
         return User(
             id=db_user.id,
             email=db_user.email,
-            username=db_user.username,
+            full_name=db_user.full_name,
             hashed_password=db_user.hashed_password,
             role=db_user.role,
             created_at=db_user.created_at
@@ -39,7 +39,7 @@ class PostgresUserRepository(UserRepository):
             return User(
                 id=db_user.id,
                 email=db_user.email,
-                username=db_user.username,
+                full_name=db_user.full_name,
                 hashed_password=db_user.hashed_password,
                 role=db_user.role,
                 created_at=db_user.created_at
@@ -55,7 +55,7 @@ class PostgresUserRepository(UserRepository):
             return User(
                 id=db_user.id,
                 email=db_user.email,
-                username=db_user.username,
+                full_name=db_user.full_name,
                 hashed_password=db_user.hashed_password,
                 role=db_user.role,
                 created_at=db_user.created_at

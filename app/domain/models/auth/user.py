@@ -6,21 +6,33 @@ from .user_role import UserRole
 class User(BaseModel):
     id: int | None = None
     email: EmailStr
-    username: str
+    full_name: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        pattern=r'^[a-zA-ZÀ-ÿ\s\'-]+$',  # Letters, spaces, apostrophes, hyphens
+        description="Full name (2-100 characters, letters, spaces, and - ' characters allowed)"
+    )
     hashed_password: str
     role: UserRole = Field(default=UserRole.USER)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class UserCreate(BaseModel):
     email: EmailStr
-    username: Annotated[str, constr(min_length=3, max_length=50, strip_whitespace=True)]
+    full_name: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        pattern=r'^[a-zA-ZÀ-ÿ\s\'-]+$',
+        description="Full name (2-100 characters, letters, spaces, and - ' characters allowed)"
+    )
     password: str
 
     class Config:
         json_schema_extra = {
             "example": {
                 "email": "user@example.com",
-                "username": "johndoe",
+                "full_name": "John Doe",
                 "password": "StrongP@ss123"
             }
         }
