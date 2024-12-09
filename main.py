@@ -27,6 +27,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import (
     store_brands,
     store_locations,
@@ -37,7 +38,6 @@ from app.api.routes import (
     product_entries
 )
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     responses={},
@@ -53,24 +53,19 @@ app = FastAPI(
     ]
 )
 
-# Add CORS middleware
+origins = [
+    "http://localhost:3000",
+    "localhost:3000"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://cijene.me"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Content-Type", 
-        "Authorization", 
-        "Accept",
-        "Origin",
-        "X-Requested-With"
-    ],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
     expose_headers=["*"],
-    max_age=600
+    max_age=3600,
 )
 
 # Add request logging middleware
