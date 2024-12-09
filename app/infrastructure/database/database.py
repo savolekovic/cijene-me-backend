@@ -34,10 +34,14 @@ if ENV == 'production':
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is required in production")
     
-    # Convert the URL to asyncpg format and remove sslmode
+    # Convert the URL to asyncpg format
     if DATABASE_URL.startswith('postgresql://'):
         DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://', 1)
-    DATABASE_URL = DATABASE_URL.split('?')[0]  # Remove the sslmode parameter
+    
+    # Remove sslmode from URL if present
+    if '?' in DATABASE_URL:
+        base_url = DATABASE_URL.split('?')[0]
+        DATABASE_URL = base_url
     
     # Log the connection attempt (without password)
     safe_url = DATABASE_URL.split('@')[1]
@@ -46,10 +50,12 @@ if ENV == 'production':
     # Create engine with SSL for production
     engine = create_async_engine(
         DATABASE_URL,
-        echo=False,  # Set to False in production
+        echo=False,
         connect_args={
             "ssl": {
-                "verify_cert": False
+                "mode": "require",
+                "check_hostname": False,
+                "verify_ca": False
             }
         }
     )
