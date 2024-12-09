@@ -11,9 +11,11 @@ class NotFoundError(HTTPException):
             detail=f"{resource} with id {resource_id} not found"
         )
 
-class ValidationError(HTTPException):
-    def __init__(self, detail: str):
-        super().__init__(status_code=400, detail=f"Validation error: {detail}")
+class ValidationError(Exception):
+    def __init__(self, message: str):
+        self.status_code = 400
+        self.error = "Validation error"
+        self.message = message
 
 class AuthenticationError(HTTPException):
     def __init__(self):

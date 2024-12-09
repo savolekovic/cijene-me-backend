@@ -1,7 +1,8 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr, constr
+from pydantic import BaseModel, Field, EmailStr, constr, field_validator
 from typing import Annotated
 from .user_role import UserRole
+from app.core.exceptions import ValidationError
 
 class User(BaseModel):
     id: int | None = None
@@ -38,5 +39,19 @@ class UserCreate(BaseModel):
         }
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str
     password: str
+
+    @field_validator('email')
+    def validate_email(cls, v):
+        if '@' not in v:
+            raise ValidationError("Enter a valid email address.")
+        return v
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "password": "StrongP@ss123"
+            }
+        }
