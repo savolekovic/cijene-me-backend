@@ -111,11 +111,39 @@ async def refresh_token(
         refresh_token=new_refresh_token
     )
 
-@router.post("/logout")
+@router.post("/logout", 
+    responses={
+        200: {
+            "description": "Successfully logged out",
+            "content": {
+                "application/json": {
+                    "example": {"message": "Successfully logged out"}
+                }
+            }
+        },
+        401: {
+            "description": "Not authenticated",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authentication error",
+                        "message": "Not authenticated"
+                    }
+                }
+            }
+        }
+    },
+    openapi_extra={
+        "security": [{"Bearer": []}]
+    }
+)
 async def logout(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """
+    Logout user by invalidating their refresh token
+    """
     repository = PostgresUserRepository(db)
     await repository.update_refresh_token(current_user.id, None)
     return {"message": "Successfully logged out"}

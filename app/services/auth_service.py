@@ -7,6 +7,7 @@ from app.domain.repositories.auth.user_repo import UserRepository
 import os
 from dotenv import load_dotenv
 import re
+import logging
 
 load_dotenv()
 
@@ -18,6 +19,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "30"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+logger = logging.getLogger(__name__)
 
 class AuthService:
     def __init__(self, user_repository: UserRepository):
@@ -87,9 +90,15 @@ class AuthService:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             token_data = TokenPayload(**payload)
+            
+            # Add logging to debug
+            logger.info(f"Token payload: {payload}")
+            
             if token_data.token_type != "access":
                 return None
-        except JWTError:
+            
+        except JWTError as e:
+            logger.error(f"JWT Error: {str(e)}")
             return None
         
         user = await self.user_repository.get_by_id(int(token_data.sub))
