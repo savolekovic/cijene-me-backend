@@ -6,7 +6,7 @@ from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.api.dependencies.auth import get_current_user, get_current_admin
 from app.domain.models.responses.auth_responses import UserResponse
-from app.infrastructure.database.database import DatabaseError
+from app.core.exceptions import DatabaseError
 import logging
 
 logger = logging.getLogger(__name__)
