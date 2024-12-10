@@ -8,6 +8,10 @@ from app.domain.models.responses.auth_responses import UserResponse
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService
+from app.api.dependencies.services import get_auth_service
+from app.infrastructure.logging.logger import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix="/auth",
@@ -129,11 +133,8 @@ async def register(
 )
 async def login(
     user_login: UserLogin,
-    db: AsyncSession = Depends(get_db)
+    auth_service: AuthService = Depends(get_auth_service)
 ):
-    repository = PostgresUserRepository(db)
-    auth_service = AuthService(repository)
-    
     user = await auth_service.authenticate_user(
         email=user_login.email,
         password=user_login.password
@@ -144,7 +145,7 @@ async def login(
     access_token = auth_service.create_access_token(user.id, user.role)
     refresh_token = auth_service.create_refresh_token(user.id)
     
-    await repository.update_refresh_token(user.id, refresh_token)
+    await auth_service.user_repository.update_refresh_token(user.id, refresh_token)
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 @router.post("/refresh",
