@@ -37,6 +37,15 @@ router = APIRouter(
                         "message": "Don't have permission to create a new store location"
                     }
                 }
+            }},
+        409: {"description": "Conflict",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Conflict error",
+                        "message": "Store location already exists"
+                    }
+                }
             }}
     },
     openapi_extra={

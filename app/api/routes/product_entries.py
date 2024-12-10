@@ -40,6 +40,15 @@ router = APIRouter(
                     }
                 }
             }},
+        409: {"description": "Conflict",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Conflict error",
+                        "message": "Product entry already exists"
+                    }
+                }
+            }}
     },
     openapi_extra={
         "security": [{"Bearer": []}],

@@ -60,11 +60,22 @@ async def get_current_user(
                 "application/json": {
                     "examples": {
                         "invalid_email": {
-                            "value": {"error": "Validation error", "message": "Enter a valid email address."}
-                        },
-                        "email_exists": {
-                            "value": {"error": "Validation error", "message": "Email already registered"}
+                            "value": {
+                                "error": "Validation error", 
+                                "message": "Enter a valid email address."
+                            }
                         }
+                    }
+                }
+            }
+        },
+        409: {
+            "description": "Conflict",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Conflict error",
+                        "message": "Email already registered"
                     }
                 }
             }
