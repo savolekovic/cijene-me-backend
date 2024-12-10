@@ -93,7 +93,8 @@ origins = [
     "http://localhost:3000",
     "localhost:3000",
     "https://cijene-me-admin.vercel.app",
-    "https://cijene-me-api.onrender.com"
+    "https://cijene-me-api.onrender.com",
+    "cijene-me-admin.vercel.app"
 ]
 
 app.add_middleware(
@@ -106,7 +107,11 @@ app.add_middleware(
         "Authorization", 
         "Accept",
         "Origin",
-        "X-Requested-With"
+        "X-Requested-With",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Allow-Headers",
+        "Access-Control-Allow-Credentials"
     ],
     expose_headers=["*"],
     max_age=3600
