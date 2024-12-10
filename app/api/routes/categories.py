@@ -42,7 +42,8 @@ router = APIRouter(
             }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 
 )
@@ -101,7 +102,8 @@ async def get_all_categories(
             }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def update_category(
@@ -153,7 +155,8 @@ async def update_category(
             }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def delete_category(

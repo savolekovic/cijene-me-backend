@@ -22,11 +22,28 @@ router = APIRouter(
     summary="Create a new product",
     description="Create a new product. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to create a new product"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to create a new product"
+                    }
+                }
+            }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def create_product(
@@ -56,7 +73,18 @@ async def get_all_products(
     logger.info("Fetching all products with categories")
     return await product_repo.get_all_with_categories()
 
-@router.get("/{product_id}", response_model=Product)
+@router.get("/{product_id}", response_model=Product,
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Product not found"
+                            }
+                        }
+                    }},
+            })
 async def get_product(
     product_id: int,
     product_repo: PostgresProductRepository = Depends(get_product_repository)
@@ -77,12 +105,37 @@ async def get_product(
     summary="Update a product",
     description="Update an existing product. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"},
-        404: {"description": "Not found"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to update a product"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to update a product"
+                    }
+                }
+            }},
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Product not found"
+                    }
+                }
+            }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def update_product(
@@ -115,12 +168,37 @@ async def update_product(
     summary="Delete a product",
     description="Delete an existing product. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"},
-        404: {"description": "Not found"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to delete a product"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to delete a product"
+                    }
+                }
+            }},
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Product not found"
+                    }
+                }
+            }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def delete_product(

@@ -20,11 +20,28 @@ router = APIRouter(
     summary="Create a new store brand",
     description="Create a new store brand. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to create a new store brand"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden - Insufficient privileges",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to create a new store brand"
+                    }
+                }
+            }}
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def create_store_brand(
@@ -41,7 +58,18 @@ async def create_store_brand(
         logger.error(f"Error creating store brand: {str(e)}")
         raise
 
-@router.get("/{store_brand_id}", response_model=StoreBrand)
+@router.get("/{store_brand_id}", response_model=StoreBrand,
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Store brand not found"
+                            }
+                        }
+                    }},
+            })
 async def get_store_brand(
     store_brand_id: int,
     store_brand_repo: PostgresStoreBrandRepository = Depends(get_store_brand_repository)
@@ -67,7 +95,18 @@ async def get_all_store_brands(
 @router.put("/{store_brand_id}", 
     response_model=StoreBrand,
     summary="Update a store brand",
-    description="Update an existing store brand. Requires admin or mediator role."
+    description="Update an existing store brand. Requires admin or mediator role.",
+    responses={
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to update a store brand"
+                    }
+                }
+            }},
+    }
 )
 async def update_store_brand(
     store_brand_id: int,
@@ -88,7 +127,19 @@ async def update_store_brand(
         logger.error(f"Error updating store brand {store_brand_id}: {str(e)}")
         raise
 
-@router.delete("/{store_brand_id}")
+@router.delete("/{store_brand_id}", 
+    responses={
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to delete a store brand"
+                    }
+                }
+            }},
+    }
+)
 async def delete_store_brand(
     store_brand_id: int,
     current_user: User = Depends(get_current_privileged_user),

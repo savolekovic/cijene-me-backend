@@ -22,11 +22,28 @@ router = APIRouter(
     summary="Create a new product entry",
     description="Create a new product price entry. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to update a category"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to update a category"
+                    }
+                }
+            }},
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def create_product_entry(
@@ -58,7 +75,18 @@ async def get_all_product_entries(
     logger.info("Fetching all price entries")
     return await entry_repo.get_all()
 
-@router.get("/product/{product_id}", response_model=List[ProductEntry])
+@router.get("/product/{product_id}", response_model=List[ProductEntry],
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Product not found"
+                            }
+                        }
+                    }},
+            })
 async def get_product_entries_by_product(
     product_id: int,
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
@@ -66,7 +94,18 @@ async def get_product_entries_by_product(
     logger.info(f"Fetching price entries for product: {product_id}")
     return await entry_repo.get_by_product(product_id)
 
-@router.get("/store-brand/{store_brand_id}", response_model=List[ProductEntry])
+@router.get("/store-brand/{store_brand_id}", response_model=List[ProductEntry],
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Store brand not found"
+                            }
+                        }
+                    }},
+            })
 async def get_product_entries_by_store_brand(
     store_brand_id: int,
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
@@ -74,7 +113,18 @@ async def get_product_entries_by_store_brand(
     logger.info(f"Fetching price entries for store brand: {store_brand_id}")
     return await entry_repo.get_by_store_brand(store_brand_id)
 
-@router.get("/store-location/{store_location_id}", response_model=List[ProductEntry])
+@router.get("/store-location/{store_location_id}", response_model=List[ProductEntry],
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Store location not found"
+                            }
+                        }
+                    }},
+            })
 async def get_product_entries_by_store_location(
     store_location_id: int,
     db: AsyncSession = Depends(get_db)
@@ -86,7 +136,18 @@ async def get_product_entries_by_store_location(
     except Exception as e:
         raise
 
-@router.get("/{entry_id}", response_model=ProductEntry)
+@router.get("/{entry_id}", response_model=ProductEntry,
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Product entry not found"
+                            }
+                        }
+                    }},
+            })
 async def get_product_entry(
     entry_id: int,
     db: AsyncSession = Depends(get_db)

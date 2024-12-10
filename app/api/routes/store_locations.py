@@ -20,11 +20,28 @@ router = APIRouter(
     summary="Create a new store location",
     description="Create a new store location. Requires authentication.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to create a new store location"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to create a new store location"
+                    }
+                }
+            }}
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def create_store_location(
@@ -45,7 +62,18 @@ async def create_store_location(
         logger.error(f"Error creating store location: {str(e)}")
         raise
 
-@router.get("/{location_id}", response_model=StoreLocation)
+@router.get("/{location_id}", response_model=StoreLocation,
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Store location not found"
+                            }
+                        }
+                    }}
+            })
 async def get_store_location(
     location_id: int,
     location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
@@ -61,7 +89,18 @@ async def get_store_location(
         logger.error(f"Error fetching store location {location_id}: {str(e)}")
         raise
 
-@router.get("/brand/{store_brand_id}", response_model=List[StoreLocation])
+@router.get("/brand/{store_brand_id}", response_model=List[StoreLocation],
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Store location not found"
+                            }
+                        }
+                    }}
+            })
 async def get_store_locations_by_brand(
     store_brand_id: int,
     location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
@@ -87,12 +126,37 @@ async def get_all_store_locations(
     summary="Update a store location",
     description="Update an existing store location. Requires authentication.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"},
-        404: {"description": "Not found"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to update a store location"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to update a store location"
+                    }
+                }
+            }},
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Store location not found"
+                    }
+                }
+            }}
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def update_store_location(
@@ -118,12 +182,37 @@ async def update_store_location(
     summary="Delete a store location",
     description="Delete an existing store location. Requires authentication.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"},
-        404: {"description": "Not Found"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to delete a store location"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to delete a store location"
+                    }
+                }
+            }},
+        404: {"description": "Not Found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Store location not found"
+                    }
+                }
+            }}
     },
     openapi_extra={
-        "security": [{"Bearer": []}]
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
     }
 )
 async def delete_store_location(
