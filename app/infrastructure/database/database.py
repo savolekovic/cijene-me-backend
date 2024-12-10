@@ -25,6 +25,9 @@ logger.info(f"Current environment: {ENV}")
 # Define timezone constant - Montenegro is UTC+1 (or UTC+2 in summer)
 TIMEZONE_OFFSET = timedelta(hours=1)  # or hours=2 during summer time
 
+# Reduce SQLAlchemy logging
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+
 def get_current_time():
     """Get current time in Montenegro timezone"""
     return datetime.now(timezone(TIMEZONE_OFFSET))
@@ -56,7 +59,7 @@ if ENV == 'production':
     # Create engine with SSL for production
     engine = create_async_engine(
         DATABASE_URL,
-        echo=False,
+        echo=True,
         connect_args={"ssl": ssl_context}
     )
 else:
@@ -69,7 +72,7 @@ else:
     # Create engine without SSL for local development
     engine = create_async_engine(
         DATABASE_URL,
-        echo=True
+        echo=False
     )
 
 logger.info(f"Using database for environment: {ENV}")

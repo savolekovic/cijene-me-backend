@@ -1,16 +1,16 @@
 import logging
 import sys
 
-# Configure root logger to be silent
+# Configure logging at the top
 logging.getLogger().handlers = []
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.WARNING)  # Set global level to WARNING
 
 # Configure our app logger
 app_logger = logging.getLogger("app")
 app_logger.setLevel(logging.INFO)
 app_logger.propagate = False
 
-# Create custom handler
+# Create handler with simple format
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(
     logging.Formatter(
@@ -18,8 +18,6 @@ handler.setFormatter(
         datefmt='%H:%M:%S'
     )
 )
-
-# Set handler
 app_logger.handlers = [handler]
 
 # Now import everything else
@@ -76,6 +74,17 @@ async def log_requests(request: Request, call_next):
         response = await call_next(request)
         app_logger.info(f"{request.method} {request.url.path} - {response.status_code}")
         return response
+    except ValidationError as ve:
+        # Handle ValidationError specifically
+        response = JSONResponse(
+            status_code=400,
+            content={
+                "error": "Validation error",
+                "message": str(ve)
+            }
+        )
+        app_logger.info(f"{request.method} {request.url.path} - 400 - {str(ve)}")
+        return response
     except Exception as e:
         app_logger.error(f"{request.method} {request.url.path} - {str(e)}")
         raise
@@ -126,10 +135,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, ValidationError):
         return JSONResponse(
-            status_code=exc.status_code,
+            status_code=400,
             content={
-                "error": exc.error,
-                "message": exc.message
+                "error": "Validation error",
+                "message": str(exc)
             }
         )
     
@@ -137,8 +146,8 @@ async def global_exception_handler(request: Request, exc: Exception):
         return JSONResponse(
             status_code=exc.status_code,
             content={
-                "error": "Server error",
-                "message": exc.detail
+                "error": exc.error if hasattr(exc, 'error') else "Server error",
+                "message": exc.detail if hasattr(exc, 'detail') else str(exc)
             }
         )
     

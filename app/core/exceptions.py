@@ -13,9 +13,10 @@ class NotFoundError(HTTPException):
 
 class ValidationError(Exception):
     def __init__(self, message: str):
-        self.status_code = 400
-        self.error = "Validation error"
         self.message = message
+        self.error = "Validation error"
+        self.status_code = 400
+        super().__init__(self.message)
 
 class AuthenticationError(HTTPException):
     def __init__(self):
