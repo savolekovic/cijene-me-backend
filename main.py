@@ -37,17 +37,54 @@ from app.api.routes import (
     health
 )
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
+from app.infrastructure.logging.logger import get_logger
+
+logger = get_logger(__name__)
 
 app = FastAPI(
-    responses={},
+    title="Cijene.me API",
+    description="""
+    API for tracking and comparing product prices across different stores in Montenegro.
+    
+    ## Features
+    * User Authentication
+    * Store Management
+    * Product Price Tracking
+    * Price History
+    """,
+    version="1.0.0",
+    contact={
+        "name": "Savo Lekovic",
+        "url": "https://www.google.com"
+    },
     openapi_tags=[
         {
             "name": "Authentication",
-            "description": "Endpoints for user authentication and authorization"
+            "description": "User authentication and authorization operations"
         },
         {
             "name": "Users",
-            "description": "Endpoints for user management and profile operations"
+            "description": "User management operations"
+        },
+        {
+            "name": "Store Brands",
+            "description": "Store brand management"
+        },
+        {
+            "name": "Store Locations",
+            "description": "Store location management"
+        },
+        {
+            "name": "Categories",
+            "description": "Product category management"
+        },
+        {
+            "name": "Products",
+            "description": "Product management"
+        },
+        {
+            "name": "Product Entries",
+            "description": "Product price entries and history"
         }
     ]
 )
