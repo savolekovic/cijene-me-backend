@@ -104,7 +104,9 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    max_age=3600
+    expose_headers=["*"],
+    max_age=3600,
+    allow_origin_regex=None
 )
 
 # Add request logging middleware
