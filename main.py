@@ -93,27 +93,17 @@ origins = [
     "http://localhost:3000",
     "localhost:3000",
     "https://cijene-me-admin.vercel.app",
+    "http://cijene-me-admin.vercel.app",
     "https://cijene-me-api.onrender.com",
-    "cijene-me-admin.vercel.app"
+    "http://cijene-me-api.onrender.com"
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allow_headers=[
-        "Content-Type", 
-        "Authorization", 
-        "Accept",
-        "Origin",
-        "X-Requested-With",
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Methods",
-        "Access-Control-Allow-Headers",
-        "Access-Control-Allow-Credentials"
-    ],
-    expose_headers=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
     max_age=3600
 )
 
