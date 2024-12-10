@@ -1,36 +1,28 @@
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends
 from typing import List
-import logging
 from app.domain.models.store import StoreLocation
 from app.domain.models.auth import User
-from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.store.postgres_store_location_repository import PostgresStoreLocationRepository
 from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.services import get_store_location_repository
+from app.core.exceptions import NotFoundError
+from app.infrastructure.logging.logger import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(
     prefix="/store-locations",
     tags=["Store Locations"]
 )
 
-# Common response definition
-unauthorized_response = {
-    401: {
-        "description": "Unauthorized - Invalid or missing authentication token",
-        "content": {
-            "application/json": {
-                "example": {"detail": "Could not validate credentials"}
-            }
-        }
-    }
-}
-
 @router.post("/", 
     response_model=StoreLocation,
     summary="Create a new store location",
     description="Create a new store location. Requires authentication.",
-    responses=unauthorized_response,
+    responses={
+        401: {"description": "Unauthorized"},
+        403: {"description": "Forbidden"}
+    },
     openapi_extra={
         "security": [{"Bearer": []}]
     }
@@ -39,60 +31,66 @@ async def create_store_location(
     store_brand_id: int,
     address: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
     try:
-        repository = PostgresStoreLocationRepository(db)
-        return await repository.create(store_brand_id, address)
+        logger.info(f"Creating new store location: Brand {store_brand_id}, Address {address}")
+        location = await location_repo.create(store_brand_id, address)
+        logger.info(f"Created store location with id: {location.id}")
+        return location
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.warning(f"Invalid store brand id {store_brand_id}: {str(e)}")
+        raise NotFoundError("Store brand", store_brand_id)
     except Exception as e:
-        logging.error(f"Error creating store location: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error creating store location: {str(e)}")
+        raise
 
 @router.get("/{location_id}", response_model=StoreLocation)
 async def get_store_location(
     location_id: int,
-    db: AsyncSession = Depends(get_db)
+    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
     try:
-        repository = PostgresStoreLocationRepository(db)
-        location = await repository.get(location_id)
+        logger.info(f"Fetching store location with id: {location_id}")
+        location = await location_repo.get(location_id)
         if not location:
-            raise HTTPException(status_code=404, detail="Store location not found")
+            logger.warning(f"Store location not found: {location_id}")
+            raise NotFoundError("Store location", location_id)
         return location
     except Exception as e:
-        logging.error(f"Error getting store location: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error fetching store location {location_id}: {str(e)}")
+        raise
 
 @router.get("/brand/{store_brand_id}", response_model=List[StoreLocation])
 async def get_store_locations_by_brand(
     store_brand_id: int,
-    db: AsyncSession = Depends(get_db)
+    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
     try:
-        repository = PostgresStoreLocationRepository(db)
-        return await repository.get_by_store_brand(store_brand_id)
+        logger.info(f"Fetching store locations for brand: {store_brand_id}")
+        locations = await location_repo.get_by_store_brand(store_brand_id)
+        logger.info(f"Found {len(locations)} locations for brand {store_brand_id}")
+        return locations
     except Exception as e:
-        logging.error(f"Error getting store locations: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error fetching locations for brand {store_brand_id}: {str(e)}")
+        raise
 
 @router.get("/", response_model=List[StoreLocation])
 async def get_all_store_locations(
-    db: AsyncSession = Depends(get_db)
+    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
-    try:
-        repository = PostgresStoreLocationRepository(db)
-        return await repository.get_all()
-    except Exception as e:
-        logging.error(f"Error getting all store locations: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    logger.info("Fetching all store locations")
+    return await location_repo.get_all()
 
 @router.put("/{location_id}", 
     response_model=StoreLocation,
     summary="Update a store location",
     description="Update an existing store location. Requires authentication.",
-    responses=unauthorized_response,
+    responses={
+        401: {"description": "Unauthorized"},
+        403: {"description": "Forbidden"},
+        404: {"description": "Not found"}
+    },
     openapi_extra={
         "security": [{"Bearer": []}]
     }
@@ -101,23 +99,29 @@ async def update_store_location(
     location_id: int,
     address: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
     try:
-        repository = PostgresStoreLocationRepository(db)
+        logger.info(f"Updating store location {location_id} with address: {address}")
         store_location = StoreLocation(id=location_id, store_brand_id=0, address=address)
-        updated_location = await repository.update(location_id, store_location)
+        updated_location = await location_repo.update(location_id, store_location)
         if not updated_location:
-            raise HTTPException(status_code=404, detail="Store location not found")
+            logger.warning(f"Store location not found for update: {location_id}")
+            raise NotFoundError("Store location", location_id)
+        logger.info(f"Successfully updated store location {location_id}")
         return updated_location
     except Exception as e:
-        logging.error(f"Error updating store location: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error updating store location {location_id}: {str(e)}")
+        raise
 
 @router.delete("/{location_id}",
     summary="Delete a store location",
     description="Delete an existing store location. Requires authentication.",
-    responses=unauthorized_response,
+    responses={
+        401: {"description": "Unauthorized"},
+        403: {"description": "Forbidden"},
+        404: {"description": "Not Found"}
+    },
     openapi_extra={
         "security": [{"Bearer": []}]
     }
@@ -125,14 +129,16 @@ async def update_store_location(
 async def delete_store_location(
     location_id: int,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
     try:
-        repository = PostgresStoreLocationRepository(db)
-        success = await repository.delete(location_id)
+        logger.info(f"Attempting to delete store location {location_id}")
+        success = await location_repo.delete(location_id)
         if not success:
-            raise HTTPException(status_code=404, detail="Store location not found")
+            logger.warning(f"Store location not found for deletion: {location_id}")
+            raise NotFoundError("Store location", location_id)
+        logger.info(f"Successfully deleted store location {location_id}")
         return {"message": "Store location deleted successfully"}
     except Exception as e:
-        logging.error(f"Error deleting store location: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e)) 
+        logger.error(f"Error deleting store location {location_id}: {str(e)}")
+        raise 
