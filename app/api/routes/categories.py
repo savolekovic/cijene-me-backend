@@ -22,8 +22,24 @@ router = APIRouter(
     summary="Create a new category",
     description="Create a new category. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to create a category"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to create a category"
+                    }
+                }
+            }},
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -56,9 +72,33 @@ async def get_all_categories(
     summary="Update a category",
     description="Update an existing category. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"},
-        404: {"description": "Not found"}
+         401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to update a category"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to update a category"
+                    }
+                }
+            }},
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Category not found"
+                    }
+                }
+            }},
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -84,9 +124,33 @@ async def update_category(
     summary="Delete a category",
     description="Delete an existing category. Requires admin or mediator role.",
     responses={
-        401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden"},
-        404: {"description": "Not found"}
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to delete a category"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to delete a category"
+                    }
+                }
+            }},
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Category not found"
+                    }
+                }
+            }},
     },
     openapi_extra={
         "security": [{"Bearer": []}]
