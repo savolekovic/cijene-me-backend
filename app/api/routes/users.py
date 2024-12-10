@@ -18,7 +18,29 @@ router = APIRouter(
 @router.get("/me", 
     response_model=UserResponse,
     summary="Get current user",
-    description="Get details of currently authenticated user."
+    description="Get details of currently authenticated user.",
+    responses={
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Cannot assign ADMIN role to other users"
+                    }
+                }
+            }},
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Cannot assign ADMIN role to other users"
+                    }
+                }
+            }
+        },
+    }
 )
 async def read_users_me(
     current_user: User = Depends(get_current_user)
@@ -29,7 +51,29 @@ async def read_users_me(
 @router.get("/", 
     response_model=List[UserResponse],
     summary="Get all users",
-    description="Get list of all users. Requires admin privileges."
+    description="Get list of all users. Requires admin privileges.",
+    responses={
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Cannot assign ADMIN role to other users"
+                    }
+                }
+            }},
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Cannot assign ADMIN role to other users"
+                    }
+                }
+            }
+        },
+    }
 )
 async def get_all_users(
     current_user: User = Depends(get_current_admin),

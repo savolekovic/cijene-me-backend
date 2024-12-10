@@ -23,7 +23,7 @@ router = APIRouter(
     description="Create a new product price entry. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"}
+        403: {"description": "Forbidden"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]

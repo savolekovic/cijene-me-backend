@@ -23,7 +23,7 @@ router = APIRouter(
     description="Create a new category. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"}
+        403: {"description": "Forbidden"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -57,8 +57,8 @@ async def get_all_categories(
     description="Update an existing category. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"},
-        404: {"description": "Category not found"}
+        403: {"description": "Forbidden"},
+        404: {"description": "Not found"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -85,8 +85,8 @@ async def update_category(
     description="Delete an existing category. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"},
-        404: {"description": "Category not found"}
+        403: {"description": "Forbidden"},
+        404: {"description": "Not found"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]

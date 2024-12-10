@@ -23,7 +23,7 @@ router = APIRouter(
     description="Create a new product. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"}
+        403: {"description": "Forbidden"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -78,8 +78,8 @@ async def get_product(
     description="Update an existing product. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"},
-        404: {"description": "Product not found"}
+        403: {"description": "Forbidden"},
+        404: {"description": "Not found"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]
@@ -116,8 +116,8 @@ async def update_product(
     description="Delete an existing product. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized"},
-        403: {"description": "Forbidden - Insufficient privileges"},
-        404: {"description": "Product not found"}
+        403: {"description": "Forbidden"},
+        404: {"description": "Not found"}
     },
     openapi_extra={
         "security": [{"Bearer": []}]

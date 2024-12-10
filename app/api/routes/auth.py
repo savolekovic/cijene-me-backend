@@ -40,9 +40,22 @@ async def get_current_user(
     summary="Register new user",
     description="Create a new user account with email and password. Returns user information without password.",
     responses={
-        201: {"description": "User created successfully"},
+        201: {
+            "description": "Created",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "email": "user@example.com",
+                        "full_name": "John Doe",
+                        "role": "user",
+                        "created_at": "2024-01-01T12:00:00.000Z"
+                    }
+                }
+            }
+        },
         400: {
-            "description": "Validation error",
+            "description": "Bad Request",
             "content": {
                 "application/json": {
                     "examples": {
@@ -55,6 +68,12 @@ async def get_current_user(
                     }
                 }
             }
+        }
+    },
+    openapi_extra={
+        "responses": {
+            "422": None,
+            "200": None
         }
     }
 )
@@ -93,7 +112,7 @@ async def register(
     include_in_schema=True,
     responses={
         200: {
-            "description": "Successfully logged in",
+            "description": "Successful Response",
             "content": {
                 "application/json": {
                     "example": {
@@ -151,7 +170,15 @@ async def login(
 @router.post("/refresh",
     response_model=Token,
     summary="Refresh access token",
-    description="Get new access token using refresh token. Does not require authentication header."
+    description="Get new access token using refresh token. Does not require authentication header.",
+    responses={
+        401: {"description": "Unauthorized"}
+    },
+    openapi_extra={
+        "responses": {
+            "422": None
+        }
+    }
 )
 async def refresh_token(
     refresh_token: str,
@@ -185,6 +212,14 @@ async def refresh_token(
 @router.post("/logout",
     summary="Logout user",
     description="Invalidate the current user's refresh token. Requires authentication.",
+    responses={
+        401: {"description": "Unauthorized"}
+    },
+    openapi_extra={
+        "responses": {
+            "422": None
+        }
+    }
 )
 async def logout(
     current_user: User = Depends(get_current_user),
