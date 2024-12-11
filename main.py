@@ -55,6 +55,11 @@ app = FastAPI(
     description="""
     API for tracking and comparing product prices across different stores in Montenegro.
     
+    ## Authentication
+    To use protected endpoints:
+    1. Use /auth/login to get access token
+    2. Click 'Authorize' button and enter token as: Bearer <your_token>
+    
     ## Features
     * User Authentication
     * Store Management
@@ -95,7 +100,10 @@ app = FastAPI(
             "name": "Product Entries",
             "description": "Product price entries and history"
         }
-    ]
+    ],
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+    }
 )
 
 app.add_middleware(
@@ -203,3 +211,16 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.get("/", response_class=RedirectResponse, status_code=302, include_in_schema=False)
 async def root():
     return "/docs"
+
+# Add security scheme configuration
+app.openapi_schema = {
+    "components": {
+        "securitySchemes": {
+            "Bearer": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

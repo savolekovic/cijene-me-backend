@@ -6,7 +6,7 @@ from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
