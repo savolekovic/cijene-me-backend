@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_user
@@ -116,6 +116,10 @@ async def register(
     except Exception as e:
         raise DatabaseError(str(e))
 
+@router.options("/login")
+async def login_options():
+    return Response(status_code=200)
+
 @router.post("/login", 
     response_model=Token,
     summary="Login user",
@@ -143,40 +147,41 @@ async def register(
                                 "error": "Validation error",
                                 "message": "Incorrect email or password"
                             }
-                        },
-                        "invalid_email": {
-                            "value": {
-                                "error": "Validation error",
-                                "message": "Enter a valid email address."
-                            }
                         }
                     }
                 }
             }
         }
-    },
-    openapi_extra={
-        "responses": {
-            "422": None
-        }
     }
 )
 async def login(
     user_login: UserLogin,
+    response: Response,
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    user = await auth_service.authenticate_user(
-        email=user_login.email,
-        password=user_login.password
-    )
-    if not user:
-        raise ValidationError("Incorrect email or password")
-    
-    access_token = auth_service.create_access_token(user.id, user.role)
-    refresh_token = auth_service.create_refresh_token(user.id)
-    
-    await auth_service.user_repository.update_refresh_token(user.id, refresh_token)
-    return Token(access_token=access_token, refresh_token=refresh_token)
+    try:
+        user = await auth_service.authenticate_user(
+            email=user_login.email,
+            password=user_login.password
+        )
+        
+        if not user:
+            raise ValidationError("Incorrect email or password")
+        
+        access_token = auth_service.create_access_token(user.id, user.role)
+        refresh_token = auth_service.create_refresh_token(user.id)
+        
+        await auth_service.user_repository.update_refresh_token(user.id, refresh_token)
+        
+        # Add CORS headers to response
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        
+        return Token(access_token=access_token, refresh_token=refresh_token)
+        
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise
 
 @router.post("/refresh",
     response_model=Token,
