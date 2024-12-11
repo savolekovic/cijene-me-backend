@@ -116,10 +116,6 @@ async def register(
     except Exception as e:
         raise DatabaseError(str(e))
 
-@router.options("/login")
-async def login_options():
-    return Response(status_code=200)
-
 @router.post("/login", 
     response_model=Token,
     summary="Login user",
