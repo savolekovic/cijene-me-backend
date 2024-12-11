@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Health"])
 
-@router.get("/health")
+@router.get("/health", include_in_schema=False)
 async def health_check(db: AsyncSession = Depends(get_db)):
     try:
         # Log connection attempt
