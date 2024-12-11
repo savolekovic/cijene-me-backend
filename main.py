@@ -212,9 +212,20 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def root():
     return "/docs"
 
-# Add security scheme configuration
-app.openapi_schema = {
-    "components": {
+# Update the security scheme configuration
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+        
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    # Add security scheme
+    openapi_schema["components"] = {
         "securitySchemes": {
             "Bearer": {
                 "type": "http",
@@ -223,4 +234,8 @@ app.openapi_schema = {
             }
         }
     }
-}
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
