@@ -21,7 +21,7 @@ handler.setFormatter(
 app_logger.handlers = [handler]
 
 # Now import everything else
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
@@ -90,13 +90,22 @@ app = FastAPI(
 )
 
 origins = [
-    "http://localhost:3000",
+    "http://localhost:3000/",
     "localhost:3000",
     "https://cijene-me-admin.vercel.app",
     "http://cijene-me-admin.vercel.app",
     "https://cijene-me-api.onrender.com",
     "http://cijene-me-api.onrender.com"
 ]
+
+# handle CORS preflight requests
+@app.options('/{rest_of_path:path}')
+async def preflight_handler(request: Request, rest_of_path: str) -> Response:
+    response = Response()
+    response.headers['Access-Control-Allow-Origin'] = origins
+    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+    return response
 
 app.add_middleware(
     CORSMiddleware,
@@ -117,15 +126,17 @@ app.add_middleware(
 )
 
 # Add CORS headers middleware
-@app.middleware("https")
+@app.middleware("http")
 async def add_cors_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+    response.headers['Access-Control-Allow-Origin'] = origins
+    response.headers['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
     response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 # Add request logging middleware
-@app.middleware("https")
+@app.middleware("http")
 async def log_requests(request: Request, call_next):
     try:
         response = await call_next(request)
