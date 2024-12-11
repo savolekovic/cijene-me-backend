@@ -25,7 +25,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import (
     store_brands,
     store_locations,
@@ -116,35 +116,35 @@ app.add_middleware(
     allow_origin_regex=None
 )
 
-# # Add CORS headers middleware
-# @app.middleware("http")
-# async def add_cors_headers(request: Request, call_next):
-#     response = await call_next(request)
-#     response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
-#     response.headers["Access-Control-Allow-Credentials"] = "true"
-#     return response
+# Add CORS headers middleware
+@app.middleware("https")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
-# # Add request logging middleware
-# @app.middleware("http")
-# async def log_requests(request: Request, call_next):
-#     try:
-#         response = await call_next(request)
-#         app_logger.info(f"{request.method} {request.url.path} - {response.status_code}")
-#         return response
-#     except ValidationError as ve:
-#         # Handle ValidationError specifically
-#         response = JSONResponse(
-#             status_code=400,
-#             content={
-#                 "error": "Validation error",
-#                 "message": str(ve)
-#             }
-#         )
-#         app_logger.info(f"{request.method} {request.url.path} - 400 - {str(ve)}")
-#         return response
-#     except Exception as e:
-#         app_logger.error(f"{request.method} {request.url.path} - {str(e)}")
-#         raise
+# Add request logging middleware
+@app.middleware("https")
+async def log_requests(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        app_logger.info(f"{request.method} {request.url.path} - {response.status_code}")
+        return response
+    except ValidationError as ve:
+        # Handle ValidationError specifically
+        response = JSONResponse(
+            status_code=400,
+            content={
+                "error": "Validation error",
+                "message": str(ve)
+            }
+        )
+        app_logger.info(f"{request.method} {request.url.path} - 400 - {str(ve)}")
+        return response
+    except Exception as e:
+        app_logger.error(f"{request.method} {request.url.path} - {str(e)}")
+        raise
 
 # Include routers
 app.include_router(auth.router)
