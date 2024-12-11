@@ -40,6 +40,11 @@ router = APIRouter(
                 }
             }
         },
+    },
+     openapi_extra={
+        "responses": {
+            "422": None
+        }
     }
 )
 async def read_users_me(
@@ -71,6 +76,11 @@ async def read_users_me(
                     }
                 }
             }
+        }
+    },
+     openapi_extra={
+        "responses": {
+            "422": None
         }
     }
 )
@@ -118,6 +128,11 @@ async def get_all_users(
                     }
                 }
             }
+        }
+    },
+     openapi_extra={
+        "responses": {
+            "422": None
         }
     }
 
@@ -184,6 +199,11 @@ async def update_user_role(
                     }
                 }
             }
+        }
+    },
+     openapi_extra={
+        "responses": {
+            "422": None
         }
     }
 )

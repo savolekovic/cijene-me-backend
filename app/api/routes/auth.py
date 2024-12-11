@@ -148,6 +148,11 @@ async def register(
                 }
             }
         }
+    },
+     openapi_extra={
+        "responses": {
+            "422": None
+        }
     }
 )
 async def login(
