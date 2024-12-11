@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List
 from app.domain.models.auth.user import User
 
 class UserRepository(ABC):
@@ -17,4 +17,8 @@ class UserRepository(ABC):
 
     @abstractmethod
     async def update_refresh_token(self, user_id: int, refresh_token: str | None) -> None:
+        pass
+
+    @abstractmethod
+    async def get_all_users(self) -> List[User]:
         pass

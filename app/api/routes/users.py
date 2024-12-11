@@ -50,29 +50,28 @@ async def read_users_me(
 
 @router.get("/", 
     response_model=List[UserResponse],
-    summary="Get all users",
-    description="Get list of all users. Requires admin privileges.",
+    summary="Get all non-admin users",
+    description="Get list of all non-admin users. Requires admin privileges.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Cannot assign ADMIN role to other users"
+                        "message": "Unauthorized to get all users"
                     }
                 }
             }},
-        403: {
-            "description": "Forbidden",
-            "content": {
+        403: {"description": "Forbidden",
+              "content": {
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Cannot assign ADMIN role to other users"
+                        "message": "Not enough privileges to get all users"
                     }
                 }
             }
-        },
+        }
     }
 )
 async def get_all_users(
@@ -80,9 +79,9 @@ async def get_all_users(
     user_repo: PostgresUserRepository = Depends(get_user_repository)
 ):
     try:
-        logger.info("Admin requesting all users list")
-        users = await user_repo.get_all()
-        logger.info(f"Retrieved {len(users)} users")
+        logger.info("Admin requesting all non-admin users list")
+        users = await user_repo.get_all_users()
+        logger.info(f"Retrieved {len(users)} non-admin users")
         return users
     except Exception as e:
         logger.error(f"Error fetching users: {str(e)}")

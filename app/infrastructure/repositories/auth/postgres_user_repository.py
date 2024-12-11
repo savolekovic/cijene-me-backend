@@ -76,9 +76,11 @@ class PostgresUserRepository(UserRepository):
             db_user.refresh_token = refresh_token
             await self.session.commit()
 
-    async def get_all(self) -> List[User]:
+    async def get_all_users(self) -> List[User]:
         try:
-            query = select(UserModel).order_by(asc(UserModel.id))
+            query = select(UserModel)\
+                .where(UserModel.role != UserRole.ADMIN)\
+                .order_by(asc(UserModel.id))
             result = await self.session.execute(query)
             db_users = result.scalars().all()
             
@@ -94,5 +96,5 @@ class PostgresUserRepository(UserRepository):
                 for user in db_users
             ]
         except Exception as e:
-            logger.error(f"Error getting all users: {str(e)}")
+            logger.error(f"Error getting non-admin users: {str(e)}")
             raise DatabaseError(f"Failed to get users: {str(e)}")
