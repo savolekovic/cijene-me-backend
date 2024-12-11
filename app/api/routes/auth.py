@@ -156,7 +156,6 @@ async def login_options():
 )
 async def login(
     user_login: UserLogin,
-    response: Response,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     try:
@@ -172,10 +171,6 @@ async def login(
         refresh_token = auth_service.create_refresh_token(user.id)
         
         await auth_service.user_repository.update_refresh_token(user.id, refresh_token)
-        
-        # Add CORS headers to response
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
         
         return Token(access_token=access_token, refresh_token=refresh_token)
         

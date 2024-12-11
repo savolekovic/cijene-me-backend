@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import List
 
 # Configure logging at the top
 logging.getLogger().handlers = []
@@ -41,6 +42,13 @@ from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, A
 from app.infrastructure.logging.logger import get_logger
 
 logger = get_logger(__name__)
+
+# Add after imports, before FastAPI initialization
+ALLOWED_ORIGINS: List[str] = [
+    "http://localhost:3000",
+    "https://cijene-me-admin.vercel.app",
+    "https://cijene-me-admin-*.vercel.app"
+]
 
 app = FastAPI(
     title="Cijene.me API",
@@ -90,33 +98,13 @@ app = FastAPI(
     ]
 )
 
-origins = [
-    "http://localhost:3000",
-    "https://cijene-me-admin.vercel.app"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],
-    max_age=3600
+    allow_origins=ALLOWED_ORIGINS, 
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
 )
-
-# Update the CORS headers middleware
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    response = await call_next(request)
-    origin = request.headers.get("Origin")
-    
-    if origin in origins:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
-    
-    return response
 
 # Add request logging middleware
 @app.middleware("http")
