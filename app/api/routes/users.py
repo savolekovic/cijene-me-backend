@@ -5,7 +5,7 @@ from app.infrastructure.repositories.auth.postgres_user_repository import Postgr
 from app.api.dependencies.auth import get_current_user, get_current_admin
 from app.api.dependencies.services import get_user_repository, get_auth_service
 from app.domain.models.responses.auth_responses import UserResponse
-from app.core.exceptions import DatabaseError
+from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -139,3 +139,81 @@ async def update_user_role(
     updated_user = await user_repo.update_role(user_id, role)
     logger.info(f"Successfully updated role for user_id {user_id}")
     return updated_user 
+
+@router.delete("/delete/{user_id}", 
+    summary="Delete user",
+    description="""Delete a user account. Only admins are authorized to delete any user.""",
+    responses={
+        200: {
+            "description": "User deleted successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "User deleted successfully"
+                    }
+                }
+            }
+        },
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to delete user"
+                    }
+                }
+            }},
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Cannot delete admin users"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Not Found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found",
+                        "message": "User not found"
+                    }
+                }
+            }
+        }
+    }
+)
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    user_repo: PostgresUserRepository = Depends(get_user_repository)
+):
+    try:
+        # Check if user exists
+        user_to_delete = await user_repo.get_by_id(user_id)
+        if not user_to_delete:
+            raise NotFoundError("User", user_id)
+
+        # Authorization checks
+        if user_to_delete.role == UserRole.ADMIN:
+            logger.warning(f"Attempt to delete admin user {user_id} denied")
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot delete admin users"
+            )
+
+        # Perform deletion
+        success = await user_repo.delete(user_id)
+        if not success:
+            raise DatabaseError("Failed to delete user")
+
+        logger.info(f"User {user_id} deleted successfully")
+        return {"message": "User deleted successfully"}
+
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {str(e)}")
+        raise

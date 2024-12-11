@@ -98,3 +98,22 @@ class PostgresUserRepository(UserRepository):
         except Exception as e:
             logger.error(f"Error getting non-admin users: {str(e)}")
             raise DatabaseError(f"Failed to get users: {str(e)}")
+
+    async def delete(self, user_id: int) -> bool:
+        try:
+            query = select(UserModel).where(UserModel.id == user_id)
+            result = await self.session.execute(query)
+            user = result.scalar_one_or_none()
+            
+            if user:
+                await self.session.delete(user)
+                await self.session.commit()
+                logger.info(f"Successfully deleted user with id {user_id}")
+                return True
+                
+            logger.warning(f"No user found with id {user_id} for deletion")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error deleting user {user_id}: {str(e)}")
+            raise DatabaseError(f"Failed to delete user: {str(e)}")
