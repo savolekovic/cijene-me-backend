@@ -42,18 +42,7 @@ from app.infrastructure.logging.logger import get_logger
 
 logger = get_logger(__name__)
 
-middleware = [
-    Middleware(
-        CORSMiddleware,
-        allow_origins=['*'],
-        allow_credentials=True,
-        allow_methods=['*'],
-        allow_headers=['*']
-    )
-]
-
 app = FastAPI(
-    middleware=middleware,
     title="Cijene.me API",
     description="""
     API for tracking and comparing product prices across different stores in Montenegro.
@@ -101,64 +90,54 @@ app = FastAPI(
     ]
 )
 
-# origins = [
-#     "http://localhost:3000/",
-#     "localhost:3000",
-#     "https://cijene-me-admin.vercel.app",
-#     "http://cijene-me-admin.vercel.app",
-#     "https://cijene-me-api.onrender.com",
-#     "http://cijene-me-api.onrender.com"
-# ]
+origins = [
+    "http://localhost:3000",
+    "https://cijene-me-admin.vercel.app"
+]
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-#     allow_headers=[
-#         "Content-Type",
-#         "Authorization",
-#         "Accept",
-#         "Origin",
-#         "X-Requested-With",
-#         "Access-Control-Allow-Origin"
-#     ],
-#     expose_headers=["*"],
-#     max_age=3600,
-#     allow_origin_regex=None
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600
+)
 
 # Add CORS headers middleware
-# @app.middleware("http")
-# async def add_cors_headers(request: Request, call_next):
-#     response = await call_next(request)
-#     response.headers['Access-Control-Allow-Origin'] = origins
-#     response.headers['Access-Control-Allow-Methods'] = 'POST, GET, DELETE, OPTIONS'
-#     response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
-#     response.headers["Access-Control-Allow-Credentials"] = "true"
-#     return response
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    origin = request.headers.get("Origin")
+    
+    if origin in origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        
+    return response
 
-# # Add request logging middleware
-# @app.middleware("http")
-# async def log_requests(request: Request, call_next):
-#     try:
-#         response = await call_next(request)
-#         app_logger.info(f"{request.method} {request.url.path} - {response.status_code}")
-#         return response
-#     except ValidationError as ve:
-#         # Handle ValidationError specifically
-#         response = JSONResponse(
-#             status_code=400,
-#             content={
-#                 "error": "Validation error",
-#                 "message": str(ve)
-#             }
-#         )
-#         app_logger.info(f"{request.method} {request.url.path} - 400 - {str(ve)}")
-#         return response
-#     except Exception as e:
-#         app_logger.error(f"{request.method} {request.url.path} - {str(e)}")
-#         raise
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        app_logger.info(f"{request.method} {request.url.path} - {response.status_code}")
+        return response
+    except ValidationError as ve:
+        # Handle ValidationError specifically
+        response = JSONResponse(
+            status_code=400,
+            content={
+                "error": "Validation error",
+                "message": str(ve)
+            }
+        )
+        app_logger.info(f"{request.method} {request.url.path} - 400 - {str(ve)}")
+        return response
+    except Exception as e:
+        app_logger.error(f"{request.method} {request.url.path} - {str(e)}")
+        raise
 
 # Include routers
 app.include_router(auth.router)
