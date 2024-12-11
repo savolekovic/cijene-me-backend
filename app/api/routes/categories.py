@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from app.domain.models.product import Category
 from app.domain.models.auth import User
+from app.domain.models.product.category import CategoryCreate
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.product.postgres_category_repository import PostgresCategoryRepository
 from app.api.dependencies.auth import get_current_privileged_user
@@ -57,15 +58,15 @@ router = APIRouter(
 
 )
 async def create_category(
-    name: str,
+    category: CategoryCreate,
     current_user: User = Depends(get_current_privileged_user),
     category_repo: PostgresCategoryRepository = Depends(get_category_repository)
 ):
     try:
-        logger.info(f"Creating new category: {name}")
-        category = await category_repo.create(name=name)
-        logger.info(f"Created category with id: {category.id}")
-        return category
+        logger.info(f"Creating new category: {category.name}")
+        new_category = await category_repo.create(name=category.name)
+        logger.info(f"Created category with id: {new_category.id}")
+        return new_category
     except Exception as e:
         logger.error(f"Error creating category: {str(e)}")
         raise
