@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 @router.post("/", 
-    response_model=StoreBrandResponse,
+    response_model=StoreBrand,
     summary="Create a new store brand",
     description="Create a new store brand. Requires admin or mediator role.",
     responses={
