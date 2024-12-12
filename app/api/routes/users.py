@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
+from app.api.responses.auth import UserResponse
 from app.domain.models.auth import User, UserRole
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.api.dependencies.auth import get_current_user, get_current_admin
-from app.api.dependencies.services import get_user_repository, get_auth_service
-from app.domain.models.responses.auth_responses import UserResponse
+from app.api.dependencies.services import get_user_repository
 from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
 

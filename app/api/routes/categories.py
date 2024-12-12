@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
+from app.api.models.category import CategoryRequest
 from app.domain.models.product import Category
 from app.domain.models.auth import User
-from app.domain.models.product.category import CategoryCreate
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.product.postgres_category_repository import PostgresCategoryRepository
 from app.api.dependencies.auth import get_current_privileged_user
 from app.api.dependencies.services import get_category_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
+from app.api.responses.category import CategoryResponse
 
 logger = get_logger(__name__)
 
@@ -58,7 +59,7 @@ router = APIRouter(
 
 )
 async def create_category(
-    category: CategoryCreate,
+    category: CategoryRequest,
     current_user: User = Depends(get_current_privileged_user),
     category_repo: PostgresCategoryRepository = Depends(get_category_repository)
 ):
@@ -71,7 +72,7 @@ async def create_category(
         logger.error(f"Error creating category: {str(e)}")
         raise
 
-@router.get("/", response_model=List[Category])
+@router.get("/", response_model=List[CategoryResponse])
 async def get_all_categories(
     category_repo: PostgresCategoryRepository = Depends(get_category_repository)
 ):
@@ -118,14 +119,13 @@ async def get_all_categories(
 )
 async def update_category(
     category_id: int,
-    name: str,
+    category: CategoryRequest,
     current_user: User = Depends(get_current_privileged_user),
     db: AsyncSession = Depends(get_db)
 ):
     try:
         repository = PostgresCategoryRepository(db)
-        category = Category(id=category_id, name=name)
-        updated_category = await repository.update(category_id, category)
+        updated_category = await repository.update(category_id, Category(id=category_id, name=category.name))
         if not updated_category:
             raise NotFoundError("Category", category_id)
         return updated_category

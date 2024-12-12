@@ -7,6 +7,7 @@ from app.api.dependencies.auth import get_current_privileged_user
 from app.api.dependencies.services import get_store_brand_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
+from app.api.responses.store import StoreBrandResponse
 
 logger = get_logger(__name__)
 
@@ -67,7 +68,7 @@ async def create_store_brand(
         logger.error(f"Error creating store brand: {str(e)}")
         raise
 
-@router.get("/{store_brand_id}", response_model=StoreBrand,
+@router.get("/{store_brand_id}", response_model=StoreBrandResponse,
             responses={
                 404: {"description": "Not found",
                       "content": {
@@ -94,7 +95,7 @@ async def get_store_brand(
         logger.error(f"Error fetching store brand {store_brand_id}: {str(e)}")
         raise
 
-@router.get("/", response_model=List[StoreBrand])
+@router.get("/", response_model=List[StoreBrandResponse])
 async def get_all_store_brands(
     store_brand_repo: PostgresStoreBrandRepository = Depends(get_store_brand_repository)
 ):

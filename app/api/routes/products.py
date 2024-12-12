@@ -1,14 +1,13 @@
-from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends
 from typing import List
 from app.core.exceptions import NotFoundError
-from app.domain.models.product import Product, ProductWithCategory
+from app.domain.models.product import Product
 from app.domain.models.auth import User
-from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.product.postgres_product_repository import PostgresProductRepository
 from app.api.dependencies.auth import get_current_privileged_user
 from app.api.dependencies.services import get_product_repository
 from app.infrastructure.logging.logger import get_logger
+from app.api.responses.product import ProductWithCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -75,7 +74,7 @@ async def create_product(
         logger.error(f"Error creating product: {str(e)}")
         raise
 
-@router.get("/", response_model=List[ProductWithCategory])
+@router.get("/", response_model=List[ProductWithCategoryResponse])
 async def get_all_products(
     product_repo: PostgresProductRepository = Depends(get_product_repository)
 ):

@@ -7,6 +7,7 @@ from app.api.dependencies.auth import get_current_user
 from app.api.dependencies.services import get_store_location_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
+from app.api.responses.store import StoreLocationResponse, StoreLocationWithBrandResponse
 
 logger = get_logger(__name__)
 
@@ -71,7 +72,7 @@ async def create_store_location(
         logger.error(f"Error creating store location: {str(e)}")
         raise
 
-@router.get("/{location_id}", response_model=StoreLocation,
+@router.get("/{location_id}", response_model=StoreLocationResponse,
             responses={
                 404: {"description": "Not found",
                       "content": {
@@ -123,7 +124,7 @@ async def get_store_locations_by_brand(
         logger.error(f"Error fetching locations for brand {store_brand_id}: {str(e)}")
         raise
 
-@router.get("/", response_model=List[StoreLocation])
+@router.get("/", response_model=List[StoreLocationWithBrandResponse])
 async def get_all_store_locations(
     location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
