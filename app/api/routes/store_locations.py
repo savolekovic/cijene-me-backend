@@ -8,6 +8,7 @@ from app.api.dependencies.services import get_store_location_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.store import StoreLocationResponse, StoreLocationWithBrandResponse
+from app.api.models.store import StoreLocationRequest
 
 logger = get_logger(__name__)
 
@@ -17,7 +18,7 @@ router = APIRouter(
 )
 
 @router.post("/", 
-    response_model=StoreLocation,
+    response_model=StoreLocationResponse,
     summary="Create a new store location",
     description="Create a new store location. Requires authentication.",
     responses={
@@ -55,19 +56,18 @@ router = APIRouter(
     }
 )
 async def create_store_location(
-    store_brand_id: int,
-    address: str,
+    location: StoreLocationRequest,
     current_user: User = Depends(get_current_user),
     location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
     try:
-        logger.info(f"Creating new store location: Brand {store_brand_id}, Address {address}")
-        location = await location_repo.create(store_brand_id, address)
+        logger.info(f"Creating new store location: Brand {location.store_brand_id}, Address {location.address}")
+        location = await location_repo.create(location.store_brand_id, location.address)
         logger.info(f"Created store location with id: {location.id}")
         return location
     except ValueError as e:
-        logger.warning(f"Invalid store brand id {store_brand_id}: {str(e)}")
-        raise NotFoundError("Store brand", store_brand_id)
+        logger.warning(f"Invalid store brand id {location.store_brand_id}: {str(e)}")
+        raise NotFoundError("Store brand", location.store_brand_id)
     except Exception as e:
         logger.error(f"Error creating store location: {str(e)}")
         raise

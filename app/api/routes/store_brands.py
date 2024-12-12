@@ -8,6 +8,7 @@ from app.api.dependencies.services import get_store_brand_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.store import StoreBrandResponse
+from app.api.models.store import StoreBrandRequest
 
 logger = get_logger(__name__)
 
@@ -17,7 +18,7 @@ router = APIRouter(
 )
 
 @router.post("/", 
-    response_model=StoreBrand,
+    response_model=StoreBrandResponse,
     summary="Create a new store brand",
     description="Create a new store brand. Requires admin or mediator role.",
     responses={
@@ -55,13 +56,13 @@ router = APIRouter(
     }
 )
 async def create_store_brand(
-    name: str,
+    store_brand: StoreBrandRequest,
     current_user: User = Depends(get_current_privileged_user),
     store_brand_repo: PostgresStoreBrandRepository = Depends(get_store_brand_repository)
 ):
     try:
-        logger.info(f"Creating new store brand: {name}")
-        store_brand = await store_brand_repo.create(name)
+        logger.info(f"Creating new store brand: {store_brand.name}")
+        store_brand = await store_brand_repo.create(store_brand.name)
         logger.info(f"Created store brand with id: {store_brand.id}")
         return store_brand
     except Exception as e:
