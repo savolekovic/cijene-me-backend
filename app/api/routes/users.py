@@ -8,7 +8,8 @@ from app.api.dependencies.services import get_user_repository
 from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from fastapi_cache.decorator import cache
-from fastapi_cache import FastAPICache
+from app.core.config import settings
+from app.services.cache_service import CacheManager
 
 logger = get_logger(__name__)
 
@@ -86,7 +87,7 @@ async def read_users_me(
         }
     }
 )
-@cache(expire=1800)  # 30 minutes
+@cache(expire=settings.CACHE_TIME_MEDIUM)  # 30 minutes
 async def get_all_users(
     current_user: User = Depends(get_current_admin),
     user_repo: PostgresUserRepository = Depends(get_user_repository)
@@ -157,7 +158,7 @@ async def update_user_role(
     try:
         updated_user = await user_repo.update_role(user_id, role)
         logger.info(f"Successfully updated role for user_id {user_id}")
-        await FastAPICache.clear(namespace="users")
+        await CacheManager.clear_user_related_caches()
         return updated_user
     except Exception as e:
         raise
@@ -235,7 +236,7 @@ async def delete_user(
 
         # Perform deletion
         success = await user_repo.delete(user_id)
-        await FastAPICache.clear(namespace="users")
+        await CacheManager.clear_user_related_caches()
         if not success:
             raise DatabaseError("Failed to delete user")
 

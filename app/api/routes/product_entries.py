@@ -10,7 +10,8 @@ from app.api.dependencies.auth import get_current_privileged_user
 from app.api.dependencies.services import get_product_entry_repository
 from app.infrastructure.logging.logger import get_logger
 from fastapi_cache.decorator import cache
-from fastapi_cache import FastAPICache
+from app.core.config import settings
+from app.services.cache_service import CacheManager
 
 logger = get_logger(__name__)
 
@@ -74,15 +75,14 @@ async def create_product_entry(
             price=price
         )
         logger.info(f"Created price entry with id: {entry.id}")
-        await FastAPICache.clear(namespace="product_entries")
-        await FastAPICache.clear(namespace="products")
+        await CacheManager.clear_product_related_caches()
         return entry
     except Exception as e:
         logger.error(f"Error creating price entry: {str(e)}")
         raise
 
 @router.get("/", response_model=List[ProductEntry])
-@cache(expire=600, namespace="product_entries")  # 30 minutes
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")  # 5 minutes
 async def get_all_product_entries(
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
 ):
@@ -101,7 +101,7 @@ async def get_all_product_entries(
                         }
                     }},
             })
-@cache(expire=600, namespace="product_entries")  # 30 minutes
+@cache(expire=settings.CACHE_TIME_SHORT)  # 5 minutes
 async def get_product_entries_by_product(
     product_id: int,
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
@@ -121,7 +121,7 @@ async def get_product_entries_by_product(
                         }
                     }},
             })
-@cache(expire=600, namespace="product_entries")  # 30 minutes
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")  # 5 minutes
 async def get_product_entries_by_store_brand(
     store_brand_id: int,
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
