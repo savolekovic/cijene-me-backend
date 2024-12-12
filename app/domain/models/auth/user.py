@@ -2,6 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from .user_role import UserRole
 from app.core.exceptions import ValidationError
+from app.infrastructure.database.database import get_current_time
 
 class User(BaseModel):
     id: int | None = None
@@ -15,7 +16,7 @@ class User(BaseModel):
     )
     hashed_password: str
     role: UserRole = Field(default=UserRole.USER)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=get_current_time)
 
 class UserCreate(BaseModel):
     email: EmailStr

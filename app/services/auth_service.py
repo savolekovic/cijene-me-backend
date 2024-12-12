@@ -4,10 +4,12 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.domain.models.auth import User, Token, TokenPayload, UserRole
 from app.domain.repositories.auth.user_repo import UserRepository
+from app.infrastructure.database.database import get_current_time
 import os
 from dotenv import load_dotenv
 import re
 import logging
+
 
 load_dotenv()
 
@@ -67,7 +69,7 @@ class AuthService:
 
     def create_access_token(self, user_id: int, role: UserRole) -> str:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        expire = datetime.utcnow() + expires_delta
+        expire = get_current_time() + expires_delta
         to_encode = {
             "sub": str(user_id),
             "exp": expire,
@@ -78,7 +80,7 @@ class AuthService:
 
     def create_refresh_token(self, user_id: int) -> str:
         expires_delta = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-        expire = datetime.utcnow() + expires_delta
+        expire = get_current_time() + expires_delta
         to_encode = {
             "sub": str(user_id),
             "exp": expire,
