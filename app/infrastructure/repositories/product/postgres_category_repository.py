@@ -4,6 +4,10 @@ from typing import List, Optional
 from app.domain.models.product.category import Category
 from app.domain.repositories.product.category_repo import CategoryRepository
 from app.infrastructure.database.models.product import CategoryModel
+from app.core.exceptions import DatabaseError
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PostgresCategoryRepository(CategoryRepository):
     def __init__(self, session: AsyncSession):
@@ -47,3 +51,20 @@ class PostgresCategoryRepository(CategoryRepository):
                 created_at=db_category.created_at
             )
         return None 
+
+    async def delete(self, category_id: int) -> bool:
+        try:
+            query = select(CategoryModel).where(CategoryModel.id == category_id)
+            result = await self.session.execute(query)
+            category = result.scalar_one_or_none()
+            
+            if category:
+                await self.session.delete(category)
+                await self.session.commit()
+                return True
+                
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error deleting category {category_id}: {str(e)}")
+            raise DatabaseError(f"Failed to delete category: {str(e)}")
