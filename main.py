@@ -232,6 +232,27 @@ def custom_openapi():
                 "scheme": "bearer",
                 "bearerFormat": "JWT"
             }
+        },
+        "schemas": {
+            "UserLogin": {
+                "title": "UserLogin",
+                "type": "object",
+                "properties": {
+                    "email": {"type": "string", "format": "email"},
+                    "password": {"type": "string"}
+                },
+                "required": ["email", "password"]
+            },
+            "UserCreate": {
+                "title": "UserCreate",
+                "type": "object",
+                "properties": {
+                    "email": {"type": "string", "format": "email"},
+                    "full_name": {"type": "string"},
+                    "password": {"type": "string"}
+                },
+                "required": ["email", "full_name", "password"]
+            }
         }
     }
     
