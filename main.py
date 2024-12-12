@@ -22,11 +22,10 @@ handler.setFormatter(
 app_logger.handlers = [handler]
 
 # Now import everything else
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
-from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from app.api.routes import (
     store_brands,
@@ -40,6 +39,7 @@ from app.api.routes import (
 )
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
 from app.infrastructure.logging.logger import get_logger
+from app.services.cache_service import init_cache
 
 logger = get_logger(__name__)
 
@@ -275,3 +275,7 @@ async def handle_500_errors(request: Request, call_next):
                 "message": "An unexpected error occurred"
             }
         )
+
+@app.on_event("startup")
+async def startup():
+    await init_cache()

@@ -9,6 +9,8 @@ from app.api.dependencies.services import get_product_repository
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.product import ProductWithCategoryResponse
 from app.api.models.product import ProductRequest
+from fastapi_cache.decorator import cache
+from fastapi_cache import FastAPICache
 
 logger = get_logger(__name__)
 
@@ -68,12 +70,14 @@ async def create_product(
             category_id=product.category_id
         )
         logger.info(f"Created product with id: {product.id}")
+        await FastAPICache.clear(namespace="products")
         return product
     except Exception as e:
         logger.error(f"Error creating product: {str(e)}")
         raise
 
 @router.get("/", response_model=List[ProductWithCategoryResponse])
+@cache(expire=900)  # 15 minutes
 async def get_all_products(
     product_repo: PostgresProductRepository = Depends(get_product_repository)
 ):
@@ -92,6 +96,7 @@ async def get_all_products(
                         }
                     }},
             })
+@cache(expire=900, namespace="products")
 async def get_product(
     product_id: int,
     product_repo: PostgresProductRepository = Depends(get_product_repository)
@@ -166,6 +171,7 @@ async def update_product(
             logger.warning(f"Product not found for update: {product_id}")
             raise NotFoundError("Product", product_id)
         logger.info(f"Successfully updated product {product_id}")
+        await FastAPICache.clear(namespace="products")
         return updated_product
     except Exception as e:
         logger.error(f"Error updating product {product_id}: {str(e)}")
@@ -220,6 +226,7 @@ async def delete_product(
             logger.warning(f"Product not found for deletion: {product_id}")
             raise NotFoundError("Product", product_id)
         logger.info(f"Successfully deleted product {product_id}")
+        await FastAPICache.clear(namespace="products")
         return {"message": "Product deleted successfully"}
     except Exception as e:
         logger.error(f"Error deleting product {product_id}: {str(e)}")

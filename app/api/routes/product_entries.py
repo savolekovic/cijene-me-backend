@@ -9,6 +9,8 @@ from app.infrastructure.repositories.product.postgres_product_entry_repository i
 from app.api.dependencies.auth import get_current_privileged_user
 from app.api.dependencies.services import get_product_entry_repository
 from app.infrastructure.logging.logger import get_logger
+from fastapi_cache.decorator import cache
+from fastapi_cache import FastAPICache
 
 logger = get_logger(__name__)
 
@@ -72,12 +74,15 @@ async def create_product_entry(
             price=price
         )
         logger.info(f"Created price entry with id: {entry.id}")
+        await FastAPICache.clear(namespace="product_entries")
+        await FastAPICache.clear(namespace="products")
         return entry
     except Exception as e:
         logger.error(f"Error creating price entry: {str(e)}")
         raise
 
 @router.get("/", response_model=List[ProductEntry])
+@cache(expire=600, namespace="product_entries")  # 30 minutes
 async def get_all_product_entries(
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
 ):
@@ -96,6 +101,7 @@ async def get_all_product_entries(
                         }
                     }},
             })
+@cache(expire=600, namespace="product_entries")  # 30 minutes
 async def get_product_entries_by_product(
     product_id: int,
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
@@ -115,6 +121,7 @@ async def get_product_entries_by_product(
                         }
                     }},
             })
+@cache(expire=600, namespace="product_entries")  # 30 minutes
 async def get_product_entries_by_store_brand(
     store_brand_id: int,
     entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
@@ -134,6 +141,7 @@ async def get_product_entries_by_store_brand(
                         }
                     }},
             })
+@cache(expire=600, namespace="product_entries")  # 30 minutes
 async def get_product_entries_by_store_location(
     store_location_id: int,
     db: AsyncSession = Depends(get_db)

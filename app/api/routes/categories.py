@@ -11,6 +11,8 @@ from app.api.dependencies.services import get_category_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.category import CategoryResponse
+from fastapi_cache.decorator import cache
+from fastapi_cache import FastAPICache
 
 logger = get_logger(__name__)
 
@@ -67,12 +69,15 @@ async def create_category(
         logger.info(f"Creating new category: {category.name}")
         new_category = await category_repo.create(name=category.name)
         logger.info(f"Created category with id: {new_category.id}")
+        await FastAPICache.clear(namespace="categories")
+        await FastAPICache.clear(namespace="products")
         return new_category
     except Exception as e:
         logger.error(f"Error creating category: {str(e)}")
         raise
 
 @router.get("/", response_model=List[CategoryResponse])
+@cache(expire=1800, namespace="categories")  # 30 minutes
 async def get_all_categories(
     category_repo: PostgresCategoryRepository = Depends(get_category_repository)
 ):
@@ -128,6 +133,8 @@ async def update_category(
         updated_category = await repository.update(category_id, Category(id=category_id, name=category.name))
         if not updated_category:
             raise NotFoundError("Category", category_id)
+        await FastAPICache.clear(namespace="categories")
+        await FastAPICache.clear(namespace="products")
         return updated_category
     except Exception as e:
         raise
@@ -179,6 +186,8 @@ async def delete_category(
         success = await repository.delete(category_id)
         if not success:
             raise NotFoundError("Category", category_id)
+        await FastAPICache.clear(namespace="categories")
+        await FastAPICache.clear(namespace="products")
         return {"message": "Category deleted successfully"}
     except Exception as e:
         raise 

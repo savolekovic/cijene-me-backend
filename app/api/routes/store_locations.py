@@ -8,6 +8,8 @@ from app.api.dependencies.services import get_store_location_repository
 from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.store import StoreLocationResponse, StoreLocationWithBrandResponse
+from fastapi_cache.decorator import cache
+from fastapi_cache import FastAPICache
 
 logger = get_logger(__name__)
 
@@ -64,6 +66,8 @@ async def create_store_location(
         logger.info(f"Creating new store location: Brand {store_brand_id}, Address {address}")
         location = await location_repo.create(store_brand_id, address)
         logger.info(f"Created store location with id: {location.id}")
+        await FastAPICache.clear(namespace="store_locations")
+        await FastAPICache.clear(namespace="product_entries")  # Clear related cache
         return location
     except ValueError as e:
         logger.warning(f"Invalid store brand id {store_brand_id}: {str(e)}")
@@ -84,6 +88,7 @@ async def create_store_location(
                         }
                     }}
             })
+@cache(expire=3600, namespace="store_locations")
 async def get_store_location(
     location_id: int,
     location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
@@ -125,6 +130,7 @@ async def get_store_locations_by_brand(
         raise
 
 @router.get("/", response_model=List[StoreLocationWithBrandResponse])
+@cache(expire=3600)  # 1 hour
 async def get_all_store_locations(
     location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
 ):
@@ -183,6 +189,8 @@ async def update_store_location(
             logger.warning(f"Store location not found for update: {location_id}")
             raise NotFoundError("Store location", location_id)
         logger.info(f"Successfully updated store location {location_id}")
+        await FastAPICache.clear(namespace="store_locations")
+        await FastAPICache.clear(namespace="product_entries")  # Clear related cache
         return updated_location
     except Exception as e:
         logger.error(f"Error updating store location {location_id}: {str(e)}")
@@ -237,6 +245,8 @@ async def delete_store_location(
             logger.warning(f"Store location not found for deletion: {location_id}")
             raise NotFoundError("Store location", location_id)
         logger.info(f"Successfully deleted store location {location_id}")
+        await FastAPICache.clear(namespace="store_locations")
+        await FastAPICache.clear(namespace="product_entries")  # Clear related cache
         return {"message": "Store location deleted successfully"}
     except Exception as e:
         logger.error(f"Error deleting store location {location_id}: {str(e)}")

@@ -9,6 +9,8 @@ from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.store import StoreBrandResponse
 from app.api.models.store import StoreBrandRequest
+from fastapi_cache.decorator import cache
+from fastapi_cache import FastAPICache
 
 logger = get_logger(__name__)
 
@@ -64,6 +66,9 @@ async def create_store_brand(
         logger.info(f"Creating new store brand: {store_brand.name}")
         store_brand = await store_brand_repo.create(store_brand.name)
         logger.info(f"Created store brand with id: {store_brand.id}")
+        await FastAPICache.clear(namespace="store_brands")
+        await FastAPICache.clear(namespace="store_locations")
+        await FastAPICache.clear(namespace="product_entries")
         return store_brand
     except Exception as e:
         logger.error(f"Error creating store brand: {str(e)}")
@@ -81,6 +86,7 @@ async def create_store_brand(
                         }
                     }},
             })
+@cache(expire=3600, namespace="store_brands")
 async def get_store_brand(
     store_brand_id: int,
     store_brand_repo: PostgresStoreBrandRepository = Depends(get_store_brand_repository)
@@ -97,6 +103,7 @@ async def get_store_brand(
         raise
 
 @router.get("/", response_model=List[StoreBrandResponse])
+@cache(expire=3600)
 async def get_all_store_brands(
     store_brand_repo: PostgresStoreBrandRepository = Depends(get_store_brand_repository)
 ):
@@ -133,6 +140,9 @@ async def update_store_brand(
             logger.warning(f"Store brand not found for update: {store_brand_id}")
             raise NotFoundError("Store brand", store_brand_id)
         logger.info(f"Successfully updated store brand {store_brand_id}")
+        await FastAPICache.clear(namespace="store_brands")
+        await FastAPICache.clear(namespace="store_locations")
+        await FastAPICache.clear(namespace="product_entries")
         return updated_brand
     except Exception as e:
         logger.error(f"Error updating store brand {store_brand_id}: {str(e)}")
@@ -163,6 +173,9 @@ async def delete_store_brand(
             logger.warning(f"Store brand not found for deletion: {store_brand_id}")
             raise NotFoundError("Store brand", store_brand_id)
         logger.info(f"Successfully deleted store brand {store_brand_id}")
+        await FastAPICache.clear(namespace="store_brands")
+        await FastAPICache.clear(namespace="store_locations")
+        await FastAPICache.clear(namespace="product_entries")
         return {"message": "Store brand deleted successfully"}
     except Exception as e:
         logger.error(f"Error deleting store brand {store_brand_id}: {str(e)}")

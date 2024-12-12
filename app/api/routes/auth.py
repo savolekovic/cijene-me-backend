@@ -11,6 +11,7 @@ from app.infrastructure.repositories.auth.postgres_user_repository import Postgr
 from app.services.auth_service import AuthService
 from app.api.dependencies.services import get_auth_service
 from app.infrastructure.logging.logger import get_logger
+from fastapi_cache import FastAPICache
 
 logger = get_logger(__name__)
 
@@ -113,6 +114,7 @@ async def register(
             hashed_password=auth_service.get_password_hash(user_create.password),
             role=UserRole.USER
         )
+        await FastAPICache.clear(namespace="users")
         return user
     except Exception as e:
         raise DatabaseError(str(e))
