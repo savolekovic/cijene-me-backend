@@ -8,4 +8,13 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: JWT_REFRESH_SECRET_KEY
-        generateValue: true 
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: cijene-me-cache
+          property: connectionString
+
+  - type: redis
+    name: cijene-me-cache
+    ipAllowList: [] 
