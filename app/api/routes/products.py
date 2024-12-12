@@ -8,6 +8,7 @@ from app.api.dependencies.auth import get_current_privileged_user
 from app.api.dependencies.services import get_product_repository
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.product import ProductWithCategoryResponse
+from app.api.models.product import ProductRequest
 
 logger = get_logger(__name__)
 
@@ -55,18 +56,16 @@ router = APIRouter(
     }
 )
 async def create_product(
-    name: str,
-    image_url: str,
-    category_id: int,
+    product: ProductRequest,
     current_user: User = Depends(get_current_privileged_user),
     product_repo: PostgresProductRepository = Depends(get_product_repository)
 ):
     try:
-        logger.info(f"Creating new product: {name} in category {category_id}")
+        logger.info(f"Creating new product: {product.name} in category {product.category_id}")
         product = await product_repo.create(
-            name=name,
-            image_url=image_url,
-            category_id=category_id
+            name=product.name,
+            image_url=product.image_url,
+            category_id=product.category_id
         )
         logger.info(f"Created product with id: {product.id}")
         return product
