@@ -120,7 +120,7 @@ class AuthService:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             exp = datetime.fromtimestamp(payload["exp"])
-            return datetime.utcnow() > exp
+            return get_current_time() > exp
         except JWTError:
             return True
 
