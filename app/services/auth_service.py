@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Tuple
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.domain.models.auth import User, Token, TokenPayload, UserRole
 from app.domain.repositories.auth.user_repo import UserRepository
 from app.infrastructure.database.database import get_current_time
+from app.infrastructure.logging.logger import get_logger
+from app.core.exceptions import AuthenticationError
 import os
 from dotenv import load_dotenv
 import re
@@ -12,6 +14,7 @@ import logging
 
 
 load_dotenv()
+logger = get_logger(__name__)
 
 # Configuration from environment variables with defaults
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
@@ -129,3 +132,69 @@ class AuthService:
         if not user or user.role != UserRole.ADMIN:
             return None
         return user
+
+    async def refresh_tokens(self, refresh_token: str) -> Optional[Tuple[str, str]]:
+        """
+        Refresh both access and refresh tokens using a valid refresh token.
+        Returns tuple of (new_access_token, new_refresh_token) or None if refresh token is invalid.
+        """
+        try:
+            user_id = await self.verify_refresh_token(refresh_token)
+            if not user_id:
+                logger.warning("Invalid refresh token")
+                return None
+            
+            user = await self.user_repository.get_by_id(user_id)
+            if not user:
+                logger.warning(f"User not found for refresh token: {user_id}")
+                return None
+
+            new_access_token = self.create_access_token(user_id, user.role)
+            new_refresh_token = self.create_refresh_token(user_id)
+            
+            # Update refresh token in database
+            await self.user_repository.update_refresh_token(user_id, new_refresh_token)
+            logger.info(f"Tokens refreshed for user: {user_id}")
+            
+            return new_access_token, new_refresh_token
+        except Exception as e:
+            logger.error(f"Error refreshing tokens: {str(e)}")
+            raise
+
+    async def register_user(self, email: str, password: str, full_name: str) -> User:
+        """
+        Register a new user with the given credentials.
+        Raises AuthenticationError if user already exists.
+        """
+        try:
+            logger.info(f"Attempting to register new user: {email}")
+            # Check if user already exists
+            existing_user = await self.user_repository.get_by_email(email)
+            if existing_user:
+                logger.warning(f"User already exists: {email}")
+                raise AuthenticationError("User with this email already exists")
+
+            hashed_password = self.get_password_hash(password)
+            user = await self.user_repository.create(
+                email=email,
+                hashed_password=hashed_password,
+                full_name=full_name
+            )
+            logger.info(f"Successfully registered user: {email}")
+            return user
+        except Exception as e:
+            logger.error(f"Error registering user: {str(e)}")
+            raise
+
+    async def logout_user(self, user_id: int) -> bool:
+        """
+        Logout user by removing their refresh token.
+        """
+        try:
+            logger.info(f"Logging out user: {user_id}")
+            await self.user_repository.update_refresh_token(user_id, None)
+            logger.info(f"Successfully logged out user: {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error logging out user: {str(e)}")
+            raise
