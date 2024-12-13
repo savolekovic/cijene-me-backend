@@ -287,7 +287,9 @@ container = Container()
 # Wire container
 container.wire(
     modules=[
-        "app.api.routes.products"
+        "app.api.routes.products",
+        "app.api.routes.users",
+        "app.api.routes.categories"
     ]
 )
 

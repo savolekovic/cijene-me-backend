@@ -1,19 +1,15 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from app.api.models.category import CategoryRequest
-from app.domain.models.product import Category
 from app.domain.models.auth import User
-from app.infrastructure.database.database import get_db
-from app.infrastructure.repositories.product.postgres_category_repository import PostgresCategoryRepository
 from app.api.dependencies.auth import get_current_privileged_user
-from app.api.dependencies.services import get_category_repository
-from app.core.exceptions import NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.category import CategoryResponse
+from app.api.models.category import CategoryRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
-from app.services.cache_service import CacheManager
+from app.core.container import Container
+from app.services.category_service import CategoryService
+from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
 
@@ -23,7 +19,7 @@ router = APIRouter(
 )
 
 @router.post("/", 
-    response_model=Category,
+    response_model=CategoryResponse,
     summary="Create a new category",
     description="Create a new category. Requires admin or mediator role.",
     responses={
@@ -61,35 +57,28 @@ router = APIRouter(
     }
 
 )
+@inject
 async def create_category(
     category: CategoryRequest,
     current_user: User = Depends(get_current_privileged_user),
-    category_repo: PostgresCategoryRepository = Depends(get_category_repository)
+    category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    try:
-        logger.info(f"Creating new category: {category.name}")
-        new_category = await category_repo.create(name=category.name)
-        logger.info(f"Created category with id: {new_category.id}")
-        await CacheManager.clear_product_related_caches()
-        return new_category
-    except Exception as e:
-        logger.error(f"Error creating category: {str(e)}")
-        raise
+    return await category_service.create_category(category.name)
 
 @router.get("/", response_model=List[CategoryResponse])
 @cache(expire=settings.CACHE_TIME_LONG, namespace="categories")  # 1 hour
+@inject
 async def get_all_categories(
-    category_repo: PostgresCategoryRepository = Depends(get_category_repository)
+   category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    logger.info("Fetching all categories")
-    return await category_repo.get_all() 
+    return await category_service.get_all_categories()
 
 @router.put("/{category_id}", 
-    response_model=Category,
+    response_model=CategoryResponse,
     summary="Update a category",
     description="Update an existing category. Requires admin or mediator role.",
     responses={
-         401: {"description": "Unauthorized",
+        401: {"description": "Unauthorized",
               "content": {
                 "application/json": {
                     "example": {
@@ -122,21 +111,14 @@ async def get_all_categories(
         "responses": {"422": None,}
     }
 )
+@inject
 async def update_category(
     category_id: int,
     category: CategoryRequest,
     current_user: User = Depends(get_current_privileged_user),
-    db: AsyncSession = Depends(get_db)
+    category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    try:
-        repository = PostgresCategoryRepository(db)
-        updated_category = await repository.update(category_id, Category(id=category_id, name=category.name))
-        if not updated_category:
-            raise NotFoundError("Category", category_id)
-        await CacheManager.clear_product_related_caches()
-        return updated_category
-    except Exception as e:
-        raise
+    return await category_service.update_category(category_id, category.name)
 
 @router.delete("/{category_id}",
     summary="Delete a category",
@@ -178,14 +160,31 @@ async def update_category(
 async def delete_category(
     category_id: int,
     current_user: User = Depends(get_current_privileged_user),
-    db: AsyncSession = Depends(get_db)
+     category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    try:
-        repository = PostgresCategoryRepository(db)
-        success = await repository.delete(category_id)
-        if not success:
-            raise NotFoundError("Category", category_id)
-        await CacheManager.clear_product_related_caches()
-        return {"message": "Category deleted successfully"}
-    except Exception as e:
-        raise 
+    await category_service.delete_category(category_id)
+    return {"message": "Category deleted successfully"}
+
+@router.get("/{category_id}", 
+    response_model=CategoryResponse,
+    summary="Get category by ID",
+    description="Get a specific category by ID. Public endpoint.",
+    responses={
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Category not found"
+                    }
+                }
+            }},
+    }
+)
+@cache(expire=settings.CACHE_TIME_MEDIUM)
+@inject
+async def get_category(
+    category_id: int,
+    category_service: CategoryService = Depends(Provide[Container.category_service])
+):
+    return await category_service.get_category(category_id) 
