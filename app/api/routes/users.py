@@ -2,14 +2,13 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from app.api.responses.auth import UserResponse
 from app.domain.models.auth import User, UserRole
-from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.api.dependencies.auth import get_current_user, get_current_admin
-from app.api.dependencies.services import get_user_repository
-from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
 from fastapi_cache.decorator import cache
 from app.core.config import settings
-from app.services.cache_service import CacheManager
+from app.core.container import Container
+from app.services.user_service import UserService
+from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
 
@@ -50,6 +49,7 @@ router = APIRouter(
         }
     }
 )
+@inject
 async def read_users_me(
     current_user: User = Depends(get_current_user)
 ):
@@ -87,19 +87,13 @@ async def read_users_me(
         }
     }
 )
-@cache(expire=settings.CACHE_TIME_MEDIUM)  # 30 minutes
+@cache(expire=settings.CACHE_TIME_MEDIUM)
+@inject
 async def get_all_users(
     current_user: User = Depends(get_current_admin),
-    user_repo: PostgresUserRepository = Depends(get_user_repository)
+    user_service: UserService = Depends(Provide[Container.user_service])
 ):
-    try:
-        logger.info("Admin requesting all non-admin users list")
-        users = await user_repo.get_all_users()
-        logger.info(f"Retrieved {len(users)} non-admin users")
-        return users
-    except Exception as e:
-        logger.error(f"Error fetching users: {str(e)}")
-        raise DatabaseError(str(e))
+    return await user_service.get_all_users()
 
 @router.put("/{user_id}/role", 
     response_model=UserResponse,
@@ -141,27 +135,21 @@ async def get_all_users(
     }
 
 )
+@inject
 async def update_user_role(
     user_id: int,
     role: UserRole,
     current_user: User = Depends(get_current_admin),
-    user_repo: PostgresUserRepository = Depends(get_user_repository)
+    user_service: UserService = Depends(Provide[Container.user_service])
 ):
-    logger.info(f"Updating role for user_id {user_id} to {role}")
     if role == UserRole.ADMIN and current_user.id != user_id:
         logger.warning(f"Attempt to assign ADMIN role to user_id {user_id} denied")
         raise HTTPException(
             status_code=403,
             detail="Cannot assign ADMIN role to other users"
         )
+    return await user_service.update_role(user_id, role)
     
-    try:
-        updated_user = await user_repo.update_role(user_id, role)
-        logger.info(f"Successfully updated role for user_id {user_id}")
-        await CacheManager.clear_user_related_caches()
-        return updated_user
-    except Exception as e:
-        raise
 
 @router.delete("/delete/{user_id}", 
     summary="Delete user",
@@ -215,34 +203,19 @@ async def update_user_role(
         }
     }
 )
+@inject
 async def delete_user(
     user_id: int,
-    current_user: User = Depends(get_current_user),
-    user_repo: PostgresUserRepository = Depends(get_user_repository)
+    current_user: User = Depends(get_current_admin),
+    user_service: UserService = Depends(Provide[Container.user_service])
 ):
-    try:
-        # Check if user exists
-        user_to_delete = await user_repo.get_by_id(user_id)
-        if not user_to_delete:
-            raise NotFoundError("User", user_id)
-
-        # Authorization checks
-        if user_to_delete.role == UserRole.ADMIN:
-            logger.warning(f"Attempt to delete admin user {user_id} denied")
-            raise HTTPException(
-                status_code=403,
-                detail="Cannot delete admin users"
-            )
-
-        # Perform deletion
-        success = await user_repo.delete(user_id)
-        await CacheManager.clear_user_related_caches()
-        if not success:
-            raise DatabaseError("Failed to delete user")
-
-        logger.info(f"User {user_id} deleted successfully")
-        return {"message": "User deleted successfully"}
-
-    except Exception as e:
-        logger.error(f"Error deleting user {user_id}: {str(e)}")
-        raise
+    # Check if user exists and is not admin
+    user_to_delete = await user_service.get_user(user_id)
+    if user_to_delete.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot delete admin users"
+        )
+    
+    await user_service.delete_user(user_id)
+    return {"message": "User deleted successfully"}
