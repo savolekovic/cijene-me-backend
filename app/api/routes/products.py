@@ -12,6 +12,9 @@ from app.api.models.product import ProductRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
 from app.services.cache_service import CacheManager
+from app.core.container import Container
+from app.services.product_service import ProductService
+from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
 
@@ -58,32 +61,25 @@ router = APIRouter(
         "responses": {"422": None,}
     }
 )
+@inject
 async def create_product(
     product: ProductRequest,
     current_user: User = Depends(get_current_privileged_user),
-    product_repo: PostgresProductRepository = Depends(get_product_repository)
+    product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    try:
-        logger.info(f"Creating new product: {product.name} in category {product.category_id}")
-        product = await product_repo.create(
-            name=product.name,
-            image_url=product.image_url,
-            category_id=product.category_id
-        )
-        logger.info(f"Created product with id: {product.id}")
-        await CacheManager.clear_product_related_caches()
-        return product
-    except Exception as e:
-        logger.error(f"Error creating product: {str(e)}")
-        raise
+    return await product_service.create_product(
+        name=product.name,
+        image_url=product.image_url,
+        category_id=product.category_id
+    )
 
 @router.get("/", response_model=List[ProductWithCategoryResponse])
-@cache(expire=settings.CACHE_TIME_MEDIUM)  # 30 minutes
+@cache(expire=settings.CACHE_TIME_MEDIUM)
+@inject
 async def get_all_products(
-    product_repo: PostgresProductRepository = Depends(get_product_repository)
+    product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    logger.info("Fetching all products with categories")
-    return await product_repo.get_all_with_categories()
+      return await product_service.get_all_products()
 
 @router.get("/{product_id}", response_model=Product,
             responses={
@@ -97,21 +93,13 @@ async def get_all_products(
                         }
                     }},
             })
-@cache(expire=settings.CACHE_TIME_MEDIUM)  # 30 minutes
+@cache(expire=settings.CACHE_TIME_MEDIUM)
+@inject
 async def get_product(
     product_id: int,
-    product_repo: PostgresProductRepository = Depends(get_product_repository)
+    product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    try:
-        logger.info(f"Fetching product with id: {product_id}")
-        product = await product_repo.get(product_id)
-        if not product:
-            logger.warning(f"Product not found: {product_id}")
-            raise NotFoundError("Product", product_id)
-        return product
-    except Exception as e:
-        logger.error(f"Error fetching product {product_id}: {str(e)}")
-        raise
+    return await product_service.get_product(product_id)
 
 @router.put("/{product_id}", 
     response_model=Product,
@@ -151,32 +139,19 @@ async def get_product(
         "responses": {"422": None,}
     }
 )
+@inject
 async def update_product(
     product_id: int,
-    name: str,
-    image_url: str,
-    category_id: int,
+    product: ProductRequest,
     current_user: User = Depends(get_current_privileged_user),
-    product_repo: PostgresProductRepository = Depends(get_product_repository)
+    product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    try:
-        logger.info(f"Updating product {product_id} with name: {name}")
-        product = Product(
-            id=product_id,
-            name=name,
-            image_url=image_url,
-            category_id=category_id
-        )
-        updated_product = await product_repo.update(product_id, product)
-        if not updated_product:
-            logger.warning(f"Product not found for update: {product_id}")
-            raise NotFoundError("Product", product_id)
-        logger.info(f"Successfully updated product {product_id}")
-        await CacheManager.clear_product_related_caches()
-        return updated_product
-    except Exception as e:
-        logger.error(f"Error updating product {product_id}: {str(e)}")
-        raise
+    return await product_service.update_product(
+        product_id=product_id,
+        name=product.name,
+        image_url=product.image_url,
+        category_id=product.category_id
+    )
 
 @router.delete("/{product_id}",
     summary="Delete a product",
@@ -215,20 +190,10 @@ async def update_product(
         "responses": {"422": None,}
     }
 )
+@inject
 async def delete_product(
     product_id: int,
     current_user: User = Depends(get_current_privileged_user),
-    product_repo: PostgresProductRepository = Depends(get_product_repository)
+    product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    try:
-        logger.info(f"Attempting to delete product {product_id}")
-        success = await product_repo.delete(product_id)
-        if not success:
-            logger.warning(f"Product not found for deletion: {product_id}")
-            raise NotFoundError("Product", product_id)
-        logger.info(f"Successfully deleted product {product_id}")
-        await CacheManager.clear_product_related_caches()
-        return {"message": "Product deleted successfully"}
-    except Exception as e:
-        logger.error(f"Error deleting product {product_id}: {str(e)}")
-        raise 
+    await product_service.delete_product(product_id)

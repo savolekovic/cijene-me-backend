@@ -40,6 +40,7 @@ from app.api.routes import (
 from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, AuthenticationError
 from app.infrastructure.logging.logger import get_logger
 from app.services.cache_service import init_cache
+from app.core.container import Container
 
 logger = get_logger(__name__)
 
@@ -279,3 +280,16 @@ async def handle_500_errors(request: Request, call_next):
 @app.on_event("startup")
 async def startup():
     await init_cache()
+
+# Create container
+container = Container()
+
+# Wire container
+container.wire(
+    modules=[
+        "app.api.routes.products"
+    ]
+)
+
+# Add container to app
+app.container = container
