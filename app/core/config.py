@@ -14,9 +14,9 @@ class Settings(BaseSettings):
     DB_NAME: str = "cijene_me_db"
     DATABASE_URL: Optional[str] = None
 
-    # JWT Settings
-    JWT_SECRET_KEY: str
-    JWT_REFRESH_SECRET_KEY: str
+    # JWT Settings - make them Optional with None default
+    JWT_SECRET_KEY: Optional[str] = None
+    JWT_REFRESH_SECRET_KEY: Optional[str] = None
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
@@ -43,6 +43,17 @@ class Settings(BaseSettings):
                 self.JWT_REFRESH_SECRET_KEY = "dev-refresh-key-not-secure"
             if not self.DATABASE_URL:
                 self.DATABASE_URL = f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        else:
+            # In production, ensure required values are set
+            if not self.JWT_SECRET_KEY or not self.JWT_REFRESH_SECRET_KEY:
+                # Use environment variables directly as fallback
+                self.JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+                self.JWT_REFRESH_SECRET_KEY = os.getenv("JWT_REFRESH_SECRET_KEY")
+                
+                if not self.JWT_SECRET_KEY or not self.JWT_REFRESH_SECRET_KEY:
+                    raise ValueError(
+                        "JWT_SECRET_KEY and JWT_REFRESH_SECRET_KEY must be set in production"
+                    )
 
     @property
     def get_database_url(self) -> str:
