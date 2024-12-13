@@ -1,5 +1,6 @@
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.backends.inmemory import InMemoryBackend
 from redis import asyncio as aioredis
 from app.core.config import settings
 from app.infrastructure.logging.logger import get_logger
@@ -35,16 +36,35 @@ class CacheManager:
 async def init_cache():
     """Initialize Redis cache"""
     if settings.USE_CACHE:
-        logger.info("Initializing Redis cache")
-        redis = aioredis.from_url(
-            settings.REDIS_URL,
-            encoding="utf8",
-            decode_responses=True
-        )
-        FastAPICache.init(
-            RedisBackend(redis),
-            prefix=settings.CACHE_PREFIX
-        )
+        logger.info("Initializing cache")
+        try:
+            if settings.REDIS_URL:
+                logger.info("Using Redis cache")
+                redis = aioredis.from_url(
+                    settings.REDIS_URL,
+                    encoding="utf8",
+                    decode_responses=True
+                )
+                FastAPICache.init(
+                    RedisBackend(redis),
+                    prefix=settings.CACHE_PREFIX
+                )
+                logger.info("Redis cache initialized successfully")
+            else:
+                # Fallback to in-memory cache if no Redis URL is provided
+                logger.info("Redis URL not provided, using in-memory cache")
+                FastAPICache.init(
+                    InMemoryBackend(),
+                    prefix=settings.CACHE_PREFIX
+                )
+                logger.info("In-memory cache initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Redis cache: {str(e)}")
+            logger.info("Falling back to in-memory cache")
+            FastAPICache.init(
+                InMemoryBackend(),
+                prefix=settings.CACHE_PREFIX
+            )
     else:
         # Initialize with dummy backend when cache is disabled
         logger.info("Cache disabled, using dummy backend")
