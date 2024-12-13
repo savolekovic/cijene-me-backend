@@ -43,6 +43,17 @@ class StoreLocationService:
             logger.error(f"Error fetching store location {location_id}: {str(e)}")
             raise
 
+    async def get_store_locations_by_brand(self, store_brand_id: int) -> List[StoreLocation]:
+        """Get all store locations for a specific store brand"""
+        try:
+            logger.info(f"Fetching store locations for brand: {store_brand_id}")
+            locations = await self.store_location_repo.get_by_store_brand(store_brand_id)
+            logger.info(f"Found {len(locations)} locations for brand {store_brand_id}")
+            return locations
+        except Exception as e:
+            logger.error(f"Error fetching locations for brand {store_brand_id}: {str(e)}")
+            raise
+
     async def update_location(self, location_id: int, store_brand_id: int, address: str) -> StoreLocation:
         try:
             logger.info(f"Updating store location {location_id}")

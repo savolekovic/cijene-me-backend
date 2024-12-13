@@ -1,17 +1,15 @@
 from fastapi import APIRouter, Depends
 from typing import List
-from sqlalchemy.ext.asyncio import AsyncSession
 from decimal import Decimal
 from app.domain.models.product import ProductEntry
 from app.domain.models.auth import User
-from app.infrastructure.database.database import get_db
-from app.infrastructure.repositories.product.postgres_product_entry_repository import PostgresProductEntryRepository
 from app.api.dependencies.auth import get_current_privileged_user
-from app.api.dependencies.services import get_product_entry_repository
 from app.infrastructure.logging.logger import get_logger
 from fastapi_cache.decorator import cache
 from app.core.config import settings
-from app.services.cache_service import CacheManager
+from app.core.container import Container
+from app.services.product_entry_service import ProductEntryService
+from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
 
@@ -22,8 +20,8 @@ router = APIRouter(
 
 @router.post("/", 
     response_model=ProductEntry,
-    summary="Create a new product entry",
-    description="Create a new product price entry. Requires admin or mediator role.",
+    summary="Create a new price entry",
+    description="Create a new price entry for a product. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -58,36 +56,29 @@ router = APIRouter(
         "responses": {"422": None,}
     }
 )
+@inject
 async def create_product_entry(
     product_id: int,
     store_brand_id: int,
     store_location_id: int,
     price: Decimal,
     current_user: User = Depends(get_current_privileged_user),
-    entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
-    try:
-        logger.info(f"Creating price entry: Product {product_id}, Store {store_brand_id}, Location {store_location_id}, Price {price}")
-        entry = await entry_repo.create(
-            product_id=product_id,
-            store_brand_id=store_brand_id,
-            store_location_id=store_location_id,
-            price=price
-        )
-        logger.info(f"Created price entry with id: {entry.id}")
-        await CacheManager.clear_product_related_caches()
-        return entry
-    except Exception as e:
-        logger.error(f"Error creating price entry: {str(e)}")
-        raise
+    return await product_entry_service.create_entry(
+        product_id=product_id,
+        store_brand_id=store_brand_id,
+        store_location_id=store_location_id,
+        price=price
+    )
 
 @router.get("/", response_model=List[ProductEntry])
-@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")  # 5 minutes
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
+@inject
 async def get_all_product_entries(
-    entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
-    logger.info("Fetching all price entries")
-    return await entry_repo.get_all()
+    return await product_entry_service.get_all_entries()
 
 @router.get("/product/{product_id}", response_model=List[ProductEntry],
             responses={
@@ -102,12 +93,12 @@ async def get_all_product_entries(
                     }},
             })
 @cache(expire=settings.CACHE_TIME_SHORT)  # 5 minutes
+@inject
 async def get_product_entries_by_product(
     product_id: int,
-    entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
-    logger.info(f"Fetching price entries for product: {product_id}")
-    return await entry_repo.get_by_product(product_id)
+    return await product_entry_service.get_entries_by_product(product_id)
 
 @router.get("/store-brand/{store_brand_id}", response_model=List[ProductEntry],
             responses={
@@ -121,13 +112,13 @@ async def get_product_entries_by_product(
                         }
                     }},
             })
-@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")  # 5 minutes
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
+@inject
 async def get_product_entries_by_store_brand(
     store_brand_id: int,
-    entry_repo: PostgresProductEntryRepository = Depends(get_product_entry_repository)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
-    logger.info(f"Fetching price entries for store brand: {store_brand_id}")
-    return await entry_repo.get_by_store_brand(store_brand_id)
+    return await product_entry_service.get_entries_by_store_brand(store_brand_id)
 
 @router.get("/store-location/{store_location_id}", response_model=List[ProductEntry],
             responses={
@@ -141,17 +132,13 @@ async def get_product_entries_by_store_brand(
                         }
                     }},
             })
-@cache(expire=600, namespace="product_entries")  # 30 minutes
+@cache(expire=600, namespace="product_entries")
+@inject
 async def get_product_entries_by_store_location(
     store_location_id: int,
-    db: AsyncSession = Depends(get_db)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
-    """Get all price entries for a specific store location. Public endpoint."""
-    try:
-        repository = PostgresProductEntryRepository(db)
-        return await repository.get_by_store_location(store_location_id)
-    except Exception as e:
-        raise
+     return await product_entry_service.get_entries_by_store_location(store_location_id)
 
 @router.get("/{entry_id}", response_model=ProductEntry,
             responses={
@@ -165,13 +152,9 @@ async def get_product_entries_by_store_location(
                         }
                     }},
             })
+@inject
 async def get_product_entry(
     entry_id: int,
-    db: AsyncSession = Depends(get_db)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
-    """Get a specific price entry by ID. Public endpoint."""
-    try:
-        repository = PostgresProductEntryRepository(db)
-        return await repository.get(entry_id)
-    except Exception as e:
-        raise
+     return await product_entry_service.get_entry(entry_id=entry_id)

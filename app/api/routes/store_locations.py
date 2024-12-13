@@ -1,16 +1,16 @@
 from fastapi import APIRouter, Depends
 from typing import List
-from app.domain.models.store import StoreLocation
 from app.domain.models.auth import User
-from app.infrastructure.repositories.store.postgres_store_location_repository import PostgresStoreLocationRepository
-from app.api.dependencies.auth import get_current_user
-from app.api.dependencies.services import get_store_location_repository
-from app.core.exceptions import NotFoundError
+from app.api.dependencies.auth import get_current_privileged_user
+from app.domain.models.store.store_location import StoreLocation
 from app.infrastructure.logging.logger import get_logger
+from app.api.models.store import StoreLocationRequest
 from app.api.responses.store import StoreLocationResponse, StoreLocationWithBrandResponse
 from fastapi_cache.decorator import cache
 from app.core.config import settings
-from app.services.cache_service import CacheManager
+from app.core.container import Container
+from app.services.store_location_service import StoreLocationService
+from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
 
@@ -20,16 +20,16 @@ router = APIRouter(
 )
 
 @router.post("/", 
-    response_model=StoreLocation,
+    response_model=StoreLocationResponse,
     summary="Create a new store location",
-    description="Create a new store location. Requires authentication.",
+    description="Create a new store location. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Unauthorized to create a new store location"
+                        "message": "Unauthorized to create store location"
                     }
                 }
             }},
@@ -38,7 +38,7 @@ router = APIRouter(
                 "application/json": {
                     "example": {
                         "error": "Forbidden error",
-                        "message": "Don't have permission to create a new store location"
+                        "message": "Don't have permission to create store location"
                     }
                 }
             }},
@@ -54,27 +54,19 @@ router = APIRouter(
     },
     openapi_extra={
         "security": [{"Bearer": []}],
-        "responses": {"422": None,}
+        "responses": {"422": None}
     }
 )
+@inject
 async def create_store_location(
-    store_brand_id: int,
-    address: str,
-    current_user: User = Depends(get_current_user),
-    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
+    store_location: StoreLocationRequest,
+    current_user: User = Depends(get_current_privileged_user),
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ):
-    try:
-        logger.info(f"Creating new store location: Brand {store_brand_id}, Address {address}")
-        location = await location_repo.create(store_brand_id, address)
-        logger.info(f"Created store location with id: {location.id}")
-        await CacheManager.clear_store_related_caches()
-        return location
-    except ValueError as e:
-        logger.warning(f"Invalid store brand id {store_brand_id}: {str(e)}")
-        raise NotFoundError("Store brand", store_brand_id)
-    except Exception as e:
-        logger.error(f"Error creating store location: {str(e)}")
-        raise
+    return await store_location_service.create_location(
+        store_brand_id=store_location.store_brand_id,
+        address=store_location.address
+    )
 
 @router.get("/{location_id}", response_model=StoreLocationResponse,
             responses={
@@ -86,23 +78,15 @@ async def create_store_location(
                                 "message": "Store location not found"
                             }
                         }
-                    }}
+                    }},
             })
 @cache(expire=settings.CACHE_TIME_LONG, namespace="store_locations")
+@inject
 async def get_store_location(
     location_id: int,
-    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ):
-    try:
-        logger.info(f"Fetching store location with id: {location_id}")
-        location = await location_repo.get(location_id)
-        if not location:
-            logger.warning(f"Store location not found: {location_id}")
-            raise NotFoundError("Store location", location_id)
-        return location
-    except Exception as e:
-        logger.error(f"Error fetching store location {location_id}: {str(e)}")
-        raise
+    return await store_location_service.get_location(location_id)
 
 @router.get("/brand/{store_brand_id}", response_model=List[StoreLocation],
             responses={
@@ -116,38 +100,33 @@ async def get_store_location(
                         }
                     }}
             })
+@inject
 async def get_store_locations_by_brand(
     store_brand_id: int,
-    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
+     store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ):
-    try:
-        logger.info(f"Fetching store locations for brand: {store_brand_id}")
-        locations = await location_repo.get_by_store_brand(store_brand_id)
-        logger.info(f"Found {len(locations)} locations for brand {store_brand_id}")
-        return locations
-    except Exception as e:
-        logger.error(f"Error fetching locations for brand {store_brand_id}: {str(e)}")
-        raise
+     return await store_location_service.get_store_locations_by_brand(store_brand_id= store_brand_id)
 
 @router.get("/", response_model=List[StoreLocationWithBrandResponse])
-@cache(expire=settings.CACHE_TIME_LONG, namespace="store_locations")  # 1 hour
+@cache(expire=settings.CACHE_TIME_LONG, namespace="store_locations")
+@inject
 async def get_all_store_locations(
-    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ):
-    logger.info("Fetching all store locations")
-    return await location_repo.get_all()
+     return await store_location_service.get_all_locations()
+   
 
 @router.put("/{location_id}", 
-    response_model=StoreLocation,
+    response_model=StoreLocationResponse,
     summary="Update a store location",
-    description="Update an existing store location. Requires authentication.",
+    description="Update an existing store location. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Unauthorized to update a store location"
+                        "message": "Unauthorized to update store location"
                     }
                 }
             }},
@@ -156,7 +135,7 @@ async def get_all_store_locations(
                 "application/json": {
                     "example": {
                         "error": "Forbidden error",
-                        "message": "Don't have permission to update a store location"
+                        "message": "Don't have permission to update store location"
                     }
                 }
             }},
@@ -172,39 +151,32 @@ async def get_all_store_locations(
     },
     openapi_extra={
         "security": [{"Bearer": []}],
-        "responses": {"422": None,}
+        "responses": {"422": None}
     }
 )
+@inject
 async def update_store_location(
     location_id: int,
-    address: str,
-    current_user: User = Depends(get_current_user),
-    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
+    store_location: StoreLocationRequest,
+    current_user: User = Depends(get_current_privileged_user),
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ):
-    try:
-        logger.info(f"Updating store location {location_id} with address: {address}")
-        store_location = StoreLocation(id=location_id, store_brand_id=0, address=address)
-        updated_location = await location_repo.update(location_id, store_location)
-        if not updated_location:
-            logger.warning(f"Store location not found for update: {location_id}")
-            raise NotFoundError("Store location", location_id)
-        logger.info(f"Successfully updated store location {location_id}")
-        await CacheManager.clear_store_related_caches()
-        return updated_location
-    except Exception as e:
-        logger.error(f"Error updating store location {location_id}: {str(e)}")
-        raise
+    return await store_location_service.update_location(
+        location_id=location_id,
+        store_brand_id=store_location.store_brand_id,
+        address=store_location.address
+    )
 
 @router.delete("/{location_id}",
     summary="Delete a store location",
-    description="Delete an existing store location. Requires authentication.",
+    description="Delete an existing store location. Requires admin or mediator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Unauthorized to delete a store location"
+                        "message": "Unauthorized to delete store location"
                     }
                 }
             }},
@@ -213,11 +185,11 @@ async def update_store_location(
                 "application/json": {
                     "example": {
                         "error": "Forbidden error",
-                        "message": "Don't have permission to delete a store location"
+                        "message": "Don't have permission to delete store location"
                     }
                 }
             }},
-        404: {"description": "Not Found",
+        404: {"description": "Not found",
               "content": {
                 "application/json": {
                     "example": {
@@ -229,23 +201,14 @@ async def update_store_location(
     },
     openapi_extra={
         "security": [{"Bearer": []}],
-        "responses": {"422": None,}
+        "responses": {"422": None}
     }
 )
+@inject
 async def delete_store_location(
     location_id: int,
-    current_user: User = Depends(get_current_user),
-    location_repo: PostgresStoreLocationRepository = Depends(get_store_location_repository)
+    current_user: User = Depends(get_current_privileged_user),
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ):
-    try:
-        logger.info(f"Attempting to delete store location {location_id}")
-        success = await location_repo.delete(location_id)
-        if not success:
-            logger.warning(f"Store location not found for deletion: {location_id}")
-            raise NotFoundError("Store location", location_id)
-        logger.info(f"Successfully deleted store location {location_id}")
-        await CacheManager.clear_store_related_caches()
-        return {"message": "Store location deleted successfully"}
-    except Exception as e:
-        logger.error(f"Error deleting store location {location_id}: {str(e)}")
-        raise 
+    await store_location_service.delete_location(location_id)
+    return {"message": "Store location deleted successfully"} 
