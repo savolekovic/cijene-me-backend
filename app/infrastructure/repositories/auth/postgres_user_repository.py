@@ -26,19 +26,48 @@ class PostgresUserRepository(UserRepository):
         await db.commit()
         await db.refresh(db_user)
 
-        return User.model_validate(db_user)
+        if db_user:
+            return User(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                hashed_password=db_user.hashed_password,
+                role=db_user.role,
+                created_at=db_user.created_at
+            )
+        return None
 
     async def get_by_email(self, email: str, db: AsyncSession) -> Optional[User]:
         query = select(UserModel).where(UserModel.email == email)
         result = await db.execute(query)
         db_user = result.scalar_one_or_none()
-        return User.model_validate(db_user) if db_user else None
+        
+        if db_user:
+            return User(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                hashed_password=db_user.hashed_password,
+                role=db_user.role,
+                created_at=db_user.created_at
+            )
+        return None
 
     async def get_by_id(self, user_id: int, db: AsyncSession) -> Optional[User]:
         query = select(UserModel).where(UserModel.id == user_id)
         result = await db.execute(query)
         db_user = result.scalar_one_or_none()
-        return User.model_validate(db_user) if db_user else None
+        
+        if db_user:
+            return User(
+                id=db_user.id,
+                email=db_user.email,
+                full_name=db_user.full_name,
+                hashed_password=db_user.hashed_password,
+                role=db_user.role,
+                created_at=db_user.created_at
+            )
+        return None
 
     async def update_refresh_token(self, user_id: int, refresh_token: str | None, db: AsyncSession) -> None:
         query = select(UserModel).where(UserModel.id == user_id)
@@ -57,7 +86,17 @@ class PostgresUserRepository(UserRepository):
             result = await db.execute(query)
             db_users = result.scalars().all()
             
-            return [User.model_validate(user) for user in db_users]
+            return [
+                User(
+                    id=user.id,
+                    email=user.email,
+                    full_name=user.full_name,
+                    hashed_password=user.hashed_password,
+                    role=user.role,
+                    created_at=user.created_at
+                ) 
+                for user in db_users
+            ]
         except Exception as e:
             logger.error(f"Error getting non-admin users: {str(e)}")
             raise DatabaseError(f"Failed to get users: {str(e)}")
@@ -91,7 +130,14 @@ class PostgresUserRepository(UserRepository):
                 user_db.role = role.value
                 await db.flush()
                 await db.commit()
-                return User.model_validate(user_db)
+                return User(
+                    id=user_db.id,
+                    email=user_db.email,
+                    full_name=user_db.full_name,
+                    hashed_password=user_db.hashed_password,
+                    role=user_db.role,
+                    created_at=user_db.created_at
+                )
             return None
         except Exception as e:
             logger.error(f"Error updating user role: {str(e)}")
