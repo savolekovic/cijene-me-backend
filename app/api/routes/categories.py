@@ -119,10 +119,11 @@ async def get_all_categories(
 async def update_category(
     category_id: int,
     category: CategoryRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await category_service.update_category(category_id, category.name)
+    return await category_service.update_category(category_id, category.name, db)
 
 @router.delete("/{category_id}",
     summary="Delete a category",
@@ -161,12 +162,14 @@ async def update_category(
         "responses": {"422": None,}
     }
 )
+@inject
 async def delete_category(
     category_id: int,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
-     category_service: CategoryService = Depends(Provide[Container.category_service])
+    category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    await category_service.delete_category(category_id)
+    await category_service.delete_category(category_id, db)
     return {"message": "Category deleted successfully"}
 
 @router.get("/{category_id}", 

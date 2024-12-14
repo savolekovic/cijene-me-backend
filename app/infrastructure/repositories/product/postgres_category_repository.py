@@ -13,6 +13,7 @@ class PostgresCategoryRepository(CategoryRepository):
         category_db = CategoryModel(name=name)
         db.add(category_db)
         await db.flush()
+        await db.commit()
         return Category.model_validate(category_db)
 
     async def get_all(self, db: AsyncSession) -> List[Category]:
@@ -35,6 +36,7 @@ class PostgresCategoryRepository(CategoryRepository):
         if category_db:
             category_db.name = category.name
             await db.flush()
+            await db.commit()
             return Category.model_validate(category_db)
         return None
 
@@ -46,5 +48,6 @@ class PostgresCategoryRepository(CategoryRepository):
         if category:
             await db.delete(category)
             await db.flush()
+            await db.commit()
             return True
         return False
