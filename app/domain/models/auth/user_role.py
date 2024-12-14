@@ -1,13 +1,13 @@
 from enum import Enum
 
 class UserRole(Enum):
-    ADMIN = "admin"
-    MODERATOR = "moderator"
-    USER = "user"
+    ADMIN = "ADMIN"
+    MODERATOR = "MODERATOR"
+    USER = "USER"
 
     @classmethod
     def _missing_(cls, value):
         # Handle case-insensitive lookup
         for member in cls:
-            if member.value == value.lower():
+            if member.value.lower() == value.lower():
                 return member
