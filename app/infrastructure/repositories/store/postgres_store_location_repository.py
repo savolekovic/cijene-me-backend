@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, asc
 from typing import List, Optional
 from app.domain.models.store.store_location import StoreLocation
-from app.domain.repositories import StoreLocationRepository
+from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 
 class PostgresStoreLocationRepository(StoreLocationRepository):
