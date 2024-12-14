@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.models.auth import User, UserRole
@@ -42,7 +42,7 @@ async def get_current_privileged_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> User:
-    """Check if user is either ADMIN or MEDIATOR"""
+    """Check if user is either ADMIN or MODERATOR"""
     repository = PostgresUserRepository(db)
     auth_service = AuthService(repository)
     user = await auth_service.get_current_user(token)

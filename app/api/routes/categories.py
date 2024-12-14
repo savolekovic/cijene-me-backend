@@ -23,7 +23,7 @@ router = APIRouter(
 @router.post("/", 
     response_model=CategoryResponse,
     summary="Create a new category",
-    description="Create a new category. Requires admin or mediator role.",
+    description="Create a new category. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -80,7 +80,7 @@ async def get_all_categories(
 @router.put("/{category_id}", 
     response_model=CategoryResponse,
     summary="Update a category",
-    description="Update an existing category. Requires admin or mediator role.",
+    description="Update an existing category. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -127,7 +127,7 @@ async def update_category(
 
 @router.delete("/{category_id}",
     summary="Delete a category",
-    description="Delete an existing category. Requires admin or mediator role.",
+    description="Delete an existing category. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {

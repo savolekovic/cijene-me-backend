@@ -1,6 +1,6 @@
 from enum import Enum
 
 class UserRole(Enum):
+    ADMIN = "admin"
+    MODERATOR = "moderator"  # Changed from MEDIATOR
     USER = "user"
-    MEDIATOR = "mediator"  # Can manage content but not users
-    ADMIN = "admin"  # Can manage everything 

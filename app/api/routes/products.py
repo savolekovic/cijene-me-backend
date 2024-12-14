@@ -26,7 +26,7 @@ router = APIRouter(
 @router.post("/", 
     response_model=Product,
     summary="Create a new product",
-    description="Create a new product. Requires admin or mediator role.",
+    description="Create a new product. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -104,7 +104,7 @@ async def get_product(
 @router.put("/{product_id}", 
     response_model=Product,
     summary="Update a product",
-    description="Update an existing product. Requires admin or mediator role.",
+    description="Update an existing product. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -155,7 +155,7 @@ async def update_product(
 
 @router.delete("/{product_id}",
     summary="Delete a product",
-    description="Delete an existing product. Requires admin or mediator role.",
+    description="Delete an existing product. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {

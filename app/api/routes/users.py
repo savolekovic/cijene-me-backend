@@ -101,7 +101,7 @@ async def get_all_users(
     description="""
     Update role of a specific user. Requires admin privileges.
     Note: Admin cannot assign ADMIN role to other users.
-    Available roles: USER, MEDIATOR, ADMIN
+    Available roles: USER, MODERATOR, ADMIN
     """,
     responses={
         200: {"description": "Role updated successfully"},

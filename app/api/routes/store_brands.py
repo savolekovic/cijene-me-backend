@@ -21,7 +21,7 @@ router = APIRouter(
 @router.post("/", 
     response_model=StoreBrandResponse,
     summary="Create a new store brand",
-    description="Create a new store brand. Requires admin or mediator role.",
+    description="Create a new store brand. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -96,7 +96,7 @@ async def get_all_store_brands(
 @router.put("/{store_brand_id}", 
     response_model=StoreBrandResponse,
     summary="Update a store brand",
-    description="Update an existing store brand. Requires admin or mediator role.",
+    description="Update an existing store brand. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -142,7 +142,7 @@ async def update_store_brand(
 
 @router.delete("/{store_brand_id}",
     summary="Delete a store brand",
-    description="Delete an existing store brand. Requires admin or mediator role.",
+    description="Delete an existing store brand. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {

@@ -21,7 +21,7 @@ router = APIRouter(
 @router.post("/", 
     response_model=ProductEntry,
     summary="Create a new price entry",
-    description="Create a new price entry for a product. Requires admin or mediator role.",
+    description="Create a new price entry for a product. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
