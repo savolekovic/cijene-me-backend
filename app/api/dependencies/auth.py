@@ -45,7 +45,7 @@ async def get_current_privileged_user(
     """Check if user is either ADMIN or MODERATOR"""
     repository = PostgresUserRepository(db)
     auth_service = AuthService(repository)
-    user = await auth_service.get_current_user(token)
+    user = await auth_service.get_current_user(token, db)
     if not user or user.role == UserRole.USER:
         raise HTTPException(
             status_code=403,
