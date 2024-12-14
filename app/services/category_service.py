@@ -13,10 +13,10 @@ class CategoryService:
         self.category_repo = category_repo
         self.cache_manager = cache_manager
 
-    async def create_category(self, name: str) -> Category:
+    async def create_category(self, name: str, db: AsyncSession) -> Category:
         try:
             logger.info(f"Creating new category: {name}")
-            category = await self.category_repo.create(name)
+            category = await self.category_repo.create(name, db)
             logger.info(f"Created category with id: {category.id}")
             await self.cache_manager.clear_product_related_caches()
             return category
@@ -44,10 +44,10 @@ class CategoryService:
             logger.error(f"Error fetching category {category_id}: {str(e)}")
             raise
 
-    async def delete_category(self, category_id: int) -> bool:
+    async def delete_category(self, category_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete category {category_id}")
-            success = await self.category_repo.delete(category_id)
+            success = await self.category_repo.delete(category_id, db)
             if not success:
                 logger.warning(f"Category not found: {category_id}")
                 raise NotFoundError("Category", category_id)
@@ -58,11 +58,11 @@ class CategoryService:
             logger.error(f"Error deleting category {category_id}: {str(e)}")
             raise
 
-    async def update_category(self, category_id: int, name: str) -> Category:
+    async def update_category(self, category_id: int, name: str, db: AsyncSession) -> Category:
         try:
             logger.info(f"Updating category {category_id} with name: {name}")
             category = Category(id=category_id, name=name)
-            updated_category = await self.category_repo.update(category_id, category)
+            updated_category = await self.category_repo.update(category_id, category, db)
             if not updated_category:
                 logger.warning(f"Category not found: {category_id}")
                 raise NotFoundError("Category", category_id)

@@ -62,10 +62,11 @@ router = APIRouter(
 @inject
 async def create_category(
     category: CategoryRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await category_service.create_category(category.name)
+    return await category_service.create_category(category.name, db)
 
 @router.get("/", response_model=List[CategoryResponse])
 @cache(expire=settings.CACHE_TIME_LONG, namespace="categories")
