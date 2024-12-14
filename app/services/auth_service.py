@@ -11,6 +11,7 @@ import os
 from dotenv import load_dotenv
 import re
 import logging
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 load_dotenv()
@@ -28,8 +29,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 logger = logging.getLogger(__name__)
 
 class AuthService:
-    def __init__(self, user_repository: UserRepository):
-        self.user_repository = user_repository
+    def __init__(self, user_repo: UserRepository):
+        self.user_repo = user_repo
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
@@ -62,13 +63,17 @@ class AuthService:
             )
         return pwd_context.hash(password)
 
-    async def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        user = await self.user_repository.get_by_email(email)
-        if not user:
-            return None
-        if not self.verify_password(password, user.hashed_password):
-            return None
-        return user
+    async def authenticate_user(self, email: str, password: str, db: AsyncSession) -> Optional[User]:
+        try:
+            user = await self.user_repo.get_by_email(email, db)
+            if not user:
+                return None
+            if not self.verify_password(password, user.hashed_password):
+                return None
+            return user
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            raise
 
     def create_access_token(self, user_id: int, role: UserRole) -> str:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -91,7 +96,7 @@ class AuthService:
         }
         return jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
 
-    async def get_current_user(self, token: str) -> Optional[User]:
+    async def get_current_user(self, token: str, db: AsyncSession) -> Optional[User]:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             token_data = TokenPayload(**payload)
@@ -102,12 +107,11 @@ class AuthService:
             if token_data.token_type != "access":
                 return None
             
-        except JWTError as e:
-            logger.error(f"JWT Error: {str(e)}")
+            user_id = int(token_data.sub)
+            return await self.user_repo.get_by_id(user_id, db)
+        except Exception as e:
+            logger.error(f"Error getting current user: {str(e)}")
             return None
-        
-        user = await self.user_repository.get_by_id(int(token_data.sub))
-        return user
 
     async def verify_refresh_token(self, refresh_token: str) -> Optional[int]:
         try:
@@ -127,33 +131,28 @@ class AuthService:
         except JWTError:
             return True
 
-    async def get_admin_user(self, token: str) -> Optional[User]:
-        user = await self.get_current_user(token)
-        if not user or user.role != UserRole.ADMIN:
-            return None
-        return user
+    async def get_admin_user(self, token: str, db: AsyncSession) -> Optional[User]:
+        user = await self.get_current_user(token, db)
+        if user and user.role == UserRole.ADMIN:
+            return user
+        return None
 
-    async def refresh_tokens(self, refresh_token: str) -> Optional[Tuple[str, str]]:
-        """
-        Refresh both access and refresh tokens using a valid refresh token.
-        Returns tuple of (new_access_token, new_refresh_token) or None if refresh token is invalid.
-        """
+    async def refresh_tokens(self, refresh_token: str, db: AsyncSession) -> Optional[Tuple[str, str]]:
         try:
             user_id = await self.verify_refresh_token(refresh_token)
             if not user_id:
                 logger.warning("Invalid refresh token")
                 return None
             
-            user = await self.user_repository.get_by_id(user_id)
+            user = await self.user_repo.get_by_id(user_id, db)
             if not user:
                 logger.warning(f"User not found for refresh token: {user_id}")
                 return None
 
-            new_access_token = self.create_access_token(user_id, user.role)
-            new_refresh_token = self.create_refresh_token(user_id)
+            new_access_token = self.create_access_token(user.id, user.role)
+            new_refresh_token = self.create_refresh_token(user.id)
             
-            # Update refresh token in database
-            await self.user_repository.update_refresh_token(user_id, new_refresh_token)
+            await self.user_repo.update_refresh_token(user.id, new_refresh_token, db)
             logger.info(f"Tokens refreshed for user: {user_id}")
             
             return new_access_token, new_refresh_token
@@ -161,24 +160,21 @@ class AuthService:
             logger.error(f"Error refreshing tokens: {str(e)}")
             raise
 
-    async def register_user(self, email: str, password: str, full_name: str) -> User:
-        """
-        Register a new user with the given credentials.
-        Raises AuthenticationError if user already exists.
-        """
+    async def register_user(self, email: str, password: str, full_name: str, db: AsyncSession) -> User:
         try:
             logger.info(f"Attempting to register new user: {email}")
             # Check if user already exists
-            existing_user = await self.user_repository.get_by_email(email)
+            existing_user = await self.user_repo.get_by_email(email, db)
             if existing_user:
                 logger.warning(f"User already exists: {email}")
                 raise AuthenticationError("User with this email already exists")
 
             hashed_password = self.get_password_hash(password)
-            user = await self.user_repository.create(
+            user = await self.user_repo.create(
                 email=email,
                 hashed_password=hashed_password,
-                full_name=full_name
+                full_name=full_name,
+                db=db
             )
             logger.info(f"Successfully registered user: {email}")
             return user
@@ -186,13 +182,10 @@ class AuthService:
             logger.error(f"Error registering user: {str(e)}")
             raise
 
-    async def logout_user(self, user_id: int) -> bool:
-        """
-        Logout user by removing their refresh token.
-        """
+    async def logout_user(self, user_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Logging out user: {user_id}")
-            await self.user_repository.update_refresh_token(user_id, None)
+            await self.user_repo.update_refresh_token(user_id, None, db)
             logger.info(f"Successfully logged out user: {user_id}")
             return True
         except Exception as e:

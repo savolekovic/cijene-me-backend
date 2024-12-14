@@ -14,7 +14,7 @@ async def get_current_user(
 ) -> User:
     repository = PostgresUserRepository(db)
     auth_service = AuthService(repository)
-    user = await auth_service.get_current_user(token)
+    user = await auth_service.get_current_user(token, db)
     if not user:
         raise HTTPException(
             status_code=401,
@@ -29,7 +29,7 @@ async def get_current_admin(
 ) -> User:
     repository = PostgresUserRepository(db)
     auth_service = AuthService(repository)
-    user = await auth_service.get_admin_user(token)
+    user = await auth_service.get_admin_user(token, db)
     if not user:
         raise HTTPException(
             status_code=403,

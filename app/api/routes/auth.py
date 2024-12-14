@@ -3,16 +3,17 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_user
 from app.api.responses.auth import UserResponse
+from app.core.container import Container
 from app.core.exceptions import DatabaseError, ValidationError
 from app.domain.models.auth import User, Token, UserRole
-from app.api.models.auth import UserCreate, UserLogin
+from app.api.models.auth import UserCreate
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService
-from app.api.dependencies.services import get_auth_service
 from app.infrastructure.logging.logger import get_logger
 from app.services.cache_service import CacheManager
-from app.core.config import settings
+from fastapi.security import OAuth2PasswordRequestForm
+from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
 
@@ -93,27 +94,20 @@ async def get_current_user(
 )
 async def register(
     user_create: UserCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
-    repository = PostgresUserRepository(db)
-    auth_service = AuthService(repository)
-    
     # Validate email format
     if not user_create.email or "@" not in user_create.email:
         raise ValidationError("Invalid email format")
     
-    # Check if user exists first
-    existing_user = await repository.get_by_email(user_create.email.lower())
-    if existing_user:
-        raise ValidationError("Email already registered")
-    
-    # Create user with validated data
     try:
-        user = await repository.create(
+        # Create user with validated data
+        user = await auth_service.register_user(
             email=user_create.email.lower(),
+            password=user_create.password,
             full_name=user_create.full_name,
-            hashed_password=auth_service.get_password_hash(user_create.password),
-            role=UserRole.USER
+            db=db  # Pass db session
         )
         await CacheManager.clear_user_related_caches()
         return user
@@ -159,26 +153,30 @@ async def register(
         }
     }
 )
+@inject
 async def login(
-    user_login: UserLogin,
-    auth_service: AuthService = Depends(get_auth_service)
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
+    auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
     try:
-        user = await auth_service.authenticate_user(
-            email=user_login.email,
-            password=user_login.password
-        )
-        
+        user = await auth_service.authenticate_user(form_data.username, form_data.password, db)
         if not user:
-            raise ValidationError("Incorrect email or password")
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect email or password"
+            )
         
         access_token = auth_service.create_access_token(user.id, user.role)
         refresh_token = auth_service.create_refresh_token(user.id)
         
-        await auth_service.user_repository.update_refresh_token(user.id, refresh_token)
+        await auth_service.user_repo.update_refresh_token(user.id, refresh_token, db)
         
-        return Token(access_token=access_token, refresh_token=refresh_token)
-        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
         raise
@@ -198,32 +196,26 @@ async def login(
 )
 async def refresh_token(
     refresh_token: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
-    # No auth needed - uses refresh token instead
-    repository = PostgresUserRepository(db)
-    auth_service = AuthService(repository)
-    
-    # Verify refresh token
-    user_id = await auth_service.verify_refresh_token(refresh_token)
-    if not user_id:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        tokens = await auth_service.refresh_tokens(refresh_token, db)  # Pass db session
+        if not tokens:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid refresh token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        access_token, new_refresh_token = tokens
+        return Token(
+            access_token=access_token,
+            refresh_token=new_refresh_token
         )
-    
-    # Create new tokens
-    new_access_token = auth_service.create_access_token(user_id)
-    new_refresh_token = auth_service.create_refresh_token(user_id)
-    
-    # Update refresh token in database
-    await repository.update_refresh_token(user_id, new_refresh_token)
-    
-    return Token(
-        access_token=new_access_token,
-        refresh_token=new_refresh_token
-    )
+    except Exception as e:
+        logger.error(f"Error refreshing token: {str(e)}")
+        raise
 
 @router.post("/logout",
     summary="Logout user",
@@ -239,11 +231,8 @@ async def refresh_token(
 )
 async def logout(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
-    """
-    Logout user by invalidating their refresh token
-    """
-    repository = PostgresUserRepository(db)
-    await repository.update_refresh_token(current_user.id, None)
+    await auth_service.logout_user(current_user.id, db)  # Pass db session
     return {"message": "Successfully logged out"}
