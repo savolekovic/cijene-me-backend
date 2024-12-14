@@ -292,7 +292,8 @@ container.wire(
         "app.api.routes.categories",
         "app.api.routes.product_entries",
         "app.api.routes.store_brands",
-        "app.api.routes.store_locations"
+        "app.api.routes.store_locations",
+        "app.api.routes.auth"
     ]
 )
 

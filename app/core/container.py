@@ -95,6 +95,5 @@ class Container(containers.DeclarativeContainer):
     
     auth_service = providers.Factory(
         AuthService,
-        user_repository=user_repository,
-        cache_manager=cache_manager
+        user_repo=user_repository
     )
