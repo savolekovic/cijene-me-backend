@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from typing import List
 from app.domain.models.auth import User
 from app.api.dependencies.auth import get_current_privileged_user
+from app.infrastructure.database.database import get_db
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.category import CategoryResponse
 from app.api.models.category import CategoryRequest
@@ -10,6 +11,7 @@ from app.core.config import settings
 from app.core.container import Container
 from app.services.category_service import CategoryService
 from dependency_injector.wiring import Provide, inject
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -66,12 +68,13 @@ async def create_category(
     return await category_service.create_category(category.name)
 
 @router.get("/", response_model=List[CategoryResponse])
-@cache(expire=settings.CACHE_TIME_LONG, namespace="categories")  # 1 hour
+@cache(expire=settings.CACHE_TIME_LONG, namespace="categories")
 @inject
 async def get_all_categories(
-   category_service: CategoryService = Depends(Provide[Container.category_service])
+    db: AsyncSession = Depends(get_db),
+    category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await category_service.get_all_categories()
+    return await category_service.get_all_categories(db)
 
 @router.put("/{category_id}", 
     response_model=CategoryResponse,
@@ -185,6 +188,7 @@ async def delete_category(
 @inject
 async def get_category(
     category_id: int,
+    db: AsyncSession = Depends(get_db),
     category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await category_service.get_category(category_id) 
+    return await category_service.get_category(category_id, db) 

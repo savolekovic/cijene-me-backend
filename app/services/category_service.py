@@ -4,6 +4,7 @@ from app.domain.models.product import Category
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError
 from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -23,18 +24,18 @@ class CategoryService:
             logger.error(f"Error creating category: {str(e)}")
             raise
 
-    async def get_all_categories(self) -> List[Category]:
+    async def get_all_categories(self, db: AsyncSession) -> List[Category]:
         try:
             logger.info("Fetching all categories")
-            return await self.category_repo.get_all()
+            return await self.category_repo.get_all(db)
         except Exception as e:
             logger.error(f"Error fetching categories: {str(e)}")
             raise
 
-    async def get_category(self, category_id: int) -> Category:
+    async def get_category(self, category_id: int, db: AsyncSession) -> Category:
         try:
             logger.info(f"Fetching category with id: {category_id}")
-            category = await self.category_repo.get(category_id)
+            category = await self.category_repo.get(category_id, db)
             if not category:
                 logger.warning(f"Category not found: {category_id}")
                 raise NotFoundError("Category", category_id)
