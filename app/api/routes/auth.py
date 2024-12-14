@@ -1,18 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import get_current_user
 from app.api.responses.auth import UserResponse
 from app.core.container import Container
 from app.core.exceptions import DatabaseError, ValidationError
-from app.domain.models.auth import User, Token, UserRole
-from app.api.models.auth import UserCreate
+from app.domain.models.auth import User, Token
+from app.api.models.auth import UserCreate, UserLogin
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService
 from app.infrastructure.logging.logger import get_logger
 from app.services.cache_service import CacheManager
-from fastapi.security import OAuth2PasswordRequestForm
 from dependency_injector.wiring import Provide, inject
 
 logger = get_logger(__name__)
@@ -21,23 +19,6 @@ router = APIRouter(
     prefix="/auth",
     tags=["Authentication"]
 )
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
-) -> User:
-    repository = PostgresUserRepository(db)
-    auth_service = AuthService(repository)
-    user = await auth_service.get_current_user(token)
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
 
 @router.post("/register", 
     response_model=UserResponse,
@@ -155,12 +136,12 @@ async def register(
 )
 @inject
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    user_login: UserLogin,
     db: AsyncSession = Depends(get_db),
     auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
     try:
-        user = await auth_service.authenticate_user(form_data.username, form_data.password, db)
+        user = await auth_service.authenticate_user(user_login.email, user_login.password, db)
         if not user:
             raise HTTPException(
                 status_code=401,
