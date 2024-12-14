@@ -117,3 +117,20 @@ class PostgresUserRepository(UserRepository):
         except Exception as e:
             logger.error(f"Error deleting user {user_id}: {str(e)}")
             raise DatabaseError(f"Failed to delete user: {str(e)}")
+
+    async def update_role(self, user_id: int, role: UserRole, db: AsyncSession) -> Optional[User]:
+        try:
+            result = await db.execute(
+                select(UserModel).where(UserModel.id == user_id)
+            )
+            user_db = result.scalar_one_or_none()
+            if user_db:
+                user_db.role = role.value
+                await db.flush()
+                await db.commit()
+                return User.model_validate(user_db)
+            return None
+        except Exception as e:
+            logger.error(f"Error updating user role: {str(e)}")
+            await db.rollback()
+            raise

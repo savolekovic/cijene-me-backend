@@ -4,6 +4,7 @@ from app.domain.models.auth import User, UserRole
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError
 from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
@@ -12,20 +13,20 @@ class UserService:
         self.user_repo = user_repo
         self.cache_manager = cache_manager
 
-    async def get_all_users(self) -> List[User]:
+    async def get_all_users(self, db: AsyncSession) -> List[User]:
         try:
             logger.info("Fetching all non-admin users")
-            users = await self.user_repo.get_all_users()
+            users = await self.user_repo.get_all_users(db)
             logger.info(f"Retrieved {len(users)} non-admin users")
             return users
         except Exception as e:
             logger.error(f"Error fetching users: {str(e)}")
             raise
 
-    async def get_user(self, user_id: int) -> User:
+    async def get_user(self, user_id: int, db: AsyncSession) -> User:
         try:
             logger.info(f"Fetching user with id: {user_id}")
-            user = await self.user_repo.get_by_id(user_id)
+            user = await self.user_repo.get_by_id(user_id, db)
             if not user:
                 logger.warning(f"User not found: {user_id}")
                 raise NotFoundError("User", user_id)
@@ -34,23 +35,21 @@ class UserService:
             logger.error(f"Error fetching user {user_id}: {str(e)}")
             raise
 
-    async def update_role(self, user_id: int, role: UserRole) -> User:
+    async def update_user_role(self, user_id: int, role: UserRole, db: AsyncSession) -> User:
         try:
             logger.info(f"Updating role for user {user_id} to {role}")
-            user = await self.user_repo.update_role(user_id, role)
-            if not user:
-                logger.warning(f"User not found: {user_id}")
+            updated_user = await self.user_repo.update_role(user_id, role, db)
+            if not updated_user:
                 raise NotFoundError("User", user_id)
-            await self.cache_manager.clear_user_related_caches()
-            return user
+            return updated_user
         except Exception as e:
             logger.error(f"Error updating user role: {str(e)}")
             raise
 
-    async def delete_user(self, user_id: int) -> bool:
+    async def delete_user(self, user_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete user {user_id}")
-            success = await self.user_repo.delete(user_id)
+            success = await self.user_repo.delete(user_id, db)
             if not success:
                 logger.warning(f"User not found: {user_id}")
                 raise NotFoundError("User", user_id)
