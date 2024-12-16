@@ -3,7 +3,7 @@ from app.domain.repositories.product.category_repo import CategoryRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.product import Product, ProductWithCategory
 from app.infrastructure.logging.logger import get_logger
-from app.core.exceptions import NotFoundError, DatabaseError
+from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,13 @@ class ProductService:
         try:
             logger.info(f"Creating new product: {name} in category {category_id}")
             
+            # Check if product with same name exists
+            existing_product = await self.product_repo.get_by_name(name, db)
+            if existing_product:
+                logger.error(f"Product with name {name} already exists")
+                raise ValidationError(f"Product with name '{name}' already exists")
+            
+            # Check if category exists
             category = await self.category_repo.get(category_id, db)
             if not category:
                 logger.error(f"Category {category_id} not found")

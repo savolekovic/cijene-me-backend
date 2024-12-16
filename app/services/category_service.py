@@ -2,7 +2,7 @@ from app.domain.repositories.product.category_repo import CategoryRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.product import Category
 from app.infrastructure.logging.logger import get_logger
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,13 @@ class CategoryService:
     async def create_category(self, name: str, db: AsyncSession) -> Category:
         try:
             logger.info(f"Creating new category: {name}")
+            
+            # Check if category with same name exists
+            existing_category = await self.category_repo.get_by_name(name, db)
+            if existing_category:
+                logger.error(f"Category with name {name} already exists")
+                raise ValidationError(f"Category with name '{name}' already exists")
+            
             category = await self.category_repo.create(name, db)
             logger.info(f"Created category with id: {category.id}")
             await self.cache_manager.clear_product_related_caches()

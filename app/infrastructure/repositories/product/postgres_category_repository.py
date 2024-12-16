@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.exceptions import DatabaseError
 from app.domain.repositories.product.category_repo import CategoryRepository
 from app.domain.models.product.category import Category
 from app.infrastructure.database.models.product import CategoryModel
@@ -60,3 +61,14 @@ class PostgresCategoryRepository(CategoryRepository):
             await db.commit()
             return True
         return False
+
+    async def get_by_name(self, name: str, db: AsyncSession) -> Optional[Category]:
+        try:
+            result = await db.execute(
+                select(CategoryModel).where(CategoryModel.name.ilike(name))
+            )
+            category = result.scalar_one_or_none()
+            return Category.model_validate(category) if category else None
+        except Exception as e:
+            logger.error(f"Error getting category by name: {str(e)}")
+            raise DatabaseError(f"Failed to get category by name: {str(e)}")

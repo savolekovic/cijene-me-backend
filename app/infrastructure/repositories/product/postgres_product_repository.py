@@ -158,4 +158,23 @@ class PostgresProductRepository(ProductRepository):
             ]
         except Exception as e:
             logger.error(f"Error getting products by category: {str(e)}")
-            raise DatabaseError(f"Failed to get products by category: {str(e)}") 
+            raise DatabaseError(f"Failed to get products by category: {str(e)}")
+
+    async def get_by_name(self, name: str, db: AsyncSession) -> Optional[Product]:
+        try:
+            result = await db.execute(
+                select(ProductModel).where(ProductModel.name.ilike(name))
+            )
+            product = result.scalar_one_or_none()
+            if product:
+                return Product(
+                    id=product.id,
+                    name=product.name,
+                    image_url=product.image_url,
+                    category_id=product.category_id,
+                    created_at=product.created_at
+                )
+            return None
+        except Exception as e:
+            logger.error(f"Error getting product by name: {str(e)}")
+            raise DatabaseError(f"Failed to get product by name: {str(e)}") 
