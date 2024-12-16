@@ -47,10 +47,10 @@ class ProductService:
             logger.error(f"Error fetching all products: {str(e)}")
             raise
 
-    async def get_product(self, product_id: int) -> Product:
+    async def get_product(self, product_id: int, db: AsyncSession) -> Product:
         try:
             logger.info(f"Fetching product with id: {product_id}")
-            product = await self.product_repo.get(product_id)
+            product = await self.product_repo.get(product_id, db)
             if not product:
                 logger.warning(f"Product not found: {product_id}")
                 raise NotFoundError("Product", product_id)
@@ -59,16 +59,29 @@ class ProductService:
             logger.error(f"Error fetching product {product_id}: {str(e)}")
             raise
 
-    async def update_product(self, product_id: int, name: str, image_url: str, category_id: int) -> Product:
+    async def update_product(self, product_id: int, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
             logger.info(f"Updating product {product_id} with name: {name}")
+            
+            # Check if category exists
+            category = await self.category_repo.get(category_id, db)
+            if not category:
+                logger.error(f"Category {category_id} not found")
+                raise NotFoundError("Category", category_id)
+            
+            # Check if another product with same name exists (excluding current product)
+            existing_product = await self.product_repo.get_by_name(name, db)
+            if existing_product and existing_product.id != product_id:
+                logger.error(f"Another product with name {name} already exists")
+                raise ValidationError(f"Product with name '{name}' already exists")
+            
             product = Product(
                 id=product_id,
                 name=name,
                 image_url=image_url,
                 category_id=category_id
             )
-            updated_product = await self.product_repo.update(product_id, product)
+            updated_product = await self.product_repo.update(product_id, product, db)
             if not updated_product:
                 logger.warning(f"Product not found for update: {product_id}")
                 raise NotFoundError("Product", product_id)
@@ -79,10 +92,10 @@ class ProductService:
             logger.error(f"Error updating product {product_id}: {str(e)}")
             raise
 
-    async def delete_product(self, product_id: int) -> bool:
+    async def delete_product(self, product_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete product {product_id}")
-            success = await self.product_repo.delete(product_id)
+            success = await self.product_repo.delete(product_id, db)
             if not success:
                 logger.warning(f"Product not found for deletion: {product_id}")
                 raise NotFoundError("Product", product_id)

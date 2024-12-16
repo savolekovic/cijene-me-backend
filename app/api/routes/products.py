@@ -98,9 +98,10 @@ async def get_all_products(
 @inject
 async def get_product(
     product_id: int,
+    db: AsyncSession = Depends(get_db),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    return await product_service.get_product(product_id)
+    return await product_service.get_product(product_id, db)
 
 @router.put("/{product_id}", 
     response_model=Product,
@@ -144,6 +145,7 @@ async def get_product(
 async def update_product(
     product_id: int,
     product: ProductRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
@@ -151,7 +153,8 @@ async def update_product(
         product_id=product_id,
         name=product.name,
         image_url=product.image_url,
-        category_id=product.category_id
+        category_id=product.category_id,
+        db=db
     )
 
 @router.delete("/{product_id}",
