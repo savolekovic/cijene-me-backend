@@ -1,18 +1,14 @@
 from fastapi import APIRouter, Depends
 from typing import List
-from app.core.exceptions import NotFoundError
 from app.domain.models.product import Product
 from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
-from app.infrastructure.repositories.product.postgres_product_repository import PostgresProductRepository
 from app.api.dependencies.auth import get_current_privileged_user
-from app.api.dependencies.services import get_product_repository
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.product import ProductWithCategoryResponse
 from app.api.models.product import ProductRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
-from app.services.cache_service import CacheManager
 from app.core.container import Container
 from app.services.product_service import ProductService
 from dependency_injector.wiring import Provide, inject
@@ -81,9 +77,10 @@ async def create_product(
 @cache(expire=settings.CACHE_TIME_MEDIUM)
 @inject
 async def get_all_products(
+    db: AsyncSession = Depends(get_db),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-      return await product_service.get_all_products()
+    return await product_service.get_all_products(db)
 
 @router.get("/{product_id}", response_model=Product,
             responses={

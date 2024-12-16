@@ -13,15 +13,15 @@ from app.infrastructure.database.models.product.category import CategoryModel
 logger = logging.getLogger(__name__)
 
 class PostgresProductRepository(ProductRepository):
-    def __init__(self, session: AsyncSession):
-        self.session = session
-        
-    async def get_all_with_categories(self) -> List[ProductWithCategory]:
+    def __init__(self, session: AsyncSession = None):
+        pass
+
+    async def get_all_with_categories(self, db: AsyncSession) -> List[ProductWithCategory]:
         query = select(ProductModel, CategoryModel.name.label('category_name'))\
             .join(CategoryModel)\
             .order_by(asc(ProductModel.name))
         
-        result = await self.session.execute(query)
+        result = await db.execute(query)
         products_with_categories = result.all()
         
         return [
