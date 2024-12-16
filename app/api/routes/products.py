@@ -197,7 +197,8 @@ async def update_product(
 @inject
 async def delete_product(
     product_id: int,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    await product_service.delete_product(product_id)
+    await product_service.delete_product(product_id, db)
