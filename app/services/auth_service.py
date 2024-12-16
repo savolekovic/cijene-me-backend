@@ -76,11 +76,11 @@ class AuthService:
             raise
 
     def create_access_token(self, user_id: int, role: UserRole) -> str:
-        expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        expire = get_current_time() + expires_delta
+        # expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        # expire = get_current_time() + expires_delta
         to_encode = {
             "sub": str(user_id),
-            "exp": expire,
+            "exp": 2147483647,
             "token_type": "access",
             "role": role.value
         }
