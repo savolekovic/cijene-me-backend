@@ -1,21 +1,30 @@
 from app.domain.repositories.product.product_repo import ProductRepository
+from app.domain.repositories.product.category_repo import CategoryRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.product import Product, ProductWithCategory
 from app.infrastructure.logging.logger import get_logger
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, DatabaseError
 from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = get_logger(__name__)
 
 class ProductService:
-    def __init__(self, product_repo: ProductRepository, cache_manager: CacheManager):
+    def __init__(self, product_repo: ProductRepository, category_repo: CategoryRepository, cache_manager: CacheManager):
         self.product_repo = product_repo
+        self.category_repo = category_repo
         self.cache_manager = cache_manager
 
-    async def create_product(self, name: str, image_url: str, category_id: int) -> Product:
+    async def create_product(self, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
             logger.info(f"Creating new product: {name} in category {category_id}")
-            product = await self.product_repo.create(name, image_url, category_id)
+            
+            category = await self.category_repo.get(category_id, db)
+            if not category:
+                logger.error(f"Category {category_id} not found")
+                raise NotFoundError("Category", category_id)
+            
+            product = await self.product_repo.create(name, image_url, category_id, db)
             logger.info(f"Created product with id: {product.id}")
             await self.cache_manager.clear_product_related_caches()
             return product
