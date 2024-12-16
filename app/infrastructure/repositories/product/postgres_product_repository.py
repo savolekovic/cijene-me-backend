@@ -36,17 +36,17 @@ class PostgresProductRepository(ProductRepository):
             for product, category_name in products_with_categories
         ] 
 
-    async def create(self, name: str, image_url: str, category_id: int) -> Product:
+    async def create(self, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
             db_product = ProductModel(
                 name=name,
                 image_url=image_url,
                 category_id=category_id
             )
-            self.session.add(db_product)
-            await self.session.commit()
-            await self.session.refresh(db_product)
-
+            db.add(db_product)
+            await db.flush()
+            await db.commit()
+            
             return Product(
                 id=db_product.id,
                 name=db_product.name,
@@ -56,15 +56,59 @@ class PostgresProductRepository(ProductRepository):
             )
         except Exception as e:
             logger.error(f"Error creating product: {str(e)}")
+            await db.rollback()
             raise DatabaseError(f"Failed to create product: {str(e)}")
 
-    async def get(self, product_id: int) -> Optional[Product]:
+    async def get(self, product_id: int, db: AsyncSession) -> Optional[Product]:
         try:
-            query = select(ProductModel).where(ProductModel.id == product_id)
-            result = await self.session.execute(query)
+            result = await db.execute(
+                select(ProductModel).where(ProductModel.id == product_id)
+            )
+            product = result.scalar_one_or_none()
+            if product:
+                return Product(
+                    id=product.id,
+                    name=product.name,
+                    image_url=product.image_url,
+                    category_id=product.category_id,
+                    created_at=product.created_at
+                )
+            return None
+        except Exception as e:
+            logger.error(f"Error getting product: {str(e)}")
+            raise DatabaseError(f"Failed to get product: {str(e)}")
+
+    async def get_all(self, db: AsyncSession) -> List[Product]:
+        try:
+            result = await db.execute(
+                select(ProductModel).order_by(asc(ProductModel.name))
+            )
+            products = result.scalars().all()
+            return [
+                Product(
+                    id=p.id,
+                    name=p.name,
+                    image_url=p.image_url,
+                    category_id=p.category_id,
+                    created_at=p.created_at
+                ) for p in products
+            ]
+        except Exception as e:
+            logger.error(f"Error getting all products: {str(e)}")
+            raise DatabaseError(f"Failed to get products: {str(e)}")
+
+    async def update(self, product_id: int, product: Product, db: AsyncSession) -> Optional[Product]:
+        try:
+            result = await db.execute(
+                select(ProductModel).where(ProductModel.id == product_id)
+            )
             db_product = result.scalar_one_or_none()
-            
             if db_product:
+                db_product.name = product.name
+                db_product.image_url = product.image_url
+                db_product.category_id = product.category_id
+                await db.flush()
+                await db.commit()
                 return Product(
                     id=db_product.id,
                     name=db_product.name,
@@ -74,25 +118,44 @@ class PostgresProductRepository(ProductRepository):
                 )
             return None
         except Exception as e:
-            logger.error(f"Error getting product: {str(e)}")
-            raise DatabaseError(f"Failed to get product: {str(e)}")
+            logger.error(f"Error updating product: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to update product: {str(e)}")
 
-    async def get_all(self) -> List[Product]:
+    async def delete(self, product_id: int, db: AsyncSession) -> bool:
         try:
-            query = select(ProductModel).order_by(asc(ProductModel.name))
-            result = await self.session.execute(query)
-            db_products = result.scalars().all()
-            
+            result = await db.execute(
+                select(ProductModel).where(ProductModel.id == product_id)
+            )
+            product = result.scalar_one_or_none()
+            if product:
+                await db.delete(product)
+                await db.flush()
+                await db.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error deleting product: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to delete product: {str(e)}")
+
+    async def get_by_category(self, category_id: int, db: AsyncSession) -> List[Product]:
+        try:
+            result = await db.execute(
+                select(ProductModel)
+                .where(ProductModel.category_id == category_id)
+                .order_by(asc(ProductModel.name))
+            )
+            products = result.scalars().all()
             return [
                 Product(
-                    id=product.id,
-                    name=product.name,
-                    image_url=product.image_url,
-                    category_id=product.category_id,
-                    created_at=product.created_at
-                )
-                for product in db_products
+                    id=p.id,
+                    name=p.name,
+                    image_url=p.image_url,
+                    category_id=p.category_id,
+                    created_at=p.created_at
+                ) for p in products
             ]
         except Exception as e:
-            logger.error(f"Error getting all products: {str(e)}")
-            raise DatabaseError(f"Failed to get products: {str(e)}") 
+            logger.error(f"Error getting products by category: {str(e)}")
+            raise DatabaseError(f"Failed to get products by category: {str(e)}") 
