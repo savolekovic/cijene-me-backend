@@ -35,10 +35,10 @@ class ProductEntryService:
             if not store_location:
                 raise NotFoundError("Store Location", store_location_id)
 
-            # Create entry with store_brand_id from the location
+            # Create entry with store_brand_id from the location's store_brand
             entry = await self.product_entry_repo.create(
                 product_id=product_id,
-                store_brand_id=store_location.store_brand_id,
+                store_brand_id=store_location.store_brand.id,
                 store_location_id=store_location_id,
                 price=price,
                 db=db
