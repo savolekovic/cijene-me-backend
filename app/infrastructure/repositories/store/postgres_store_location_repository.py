@@ -6,7 +6,7 @@ from app.domain.models.store.store_location import StoreLocation
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.store import StoreLocationWithBrandResponse, StoreBrandInLocation
+from app.api.responses.store import StoreBrandInLocation, StoreLocationResponse
 
 logger = get_logger(__name__)
 
@@ -14,7 +14,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
     def __init__(self, session: AsyncSession = None):
         self.session = session
 
-    async def create(self, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocation:
+    async def create(self, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocationResponse:
         try:
             # Check for existing location with same address and brand
             existing_location = await db.execute(
@@ -35,7 +35,25 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             await db.flush()
             await db.commit()
 
-            return StoreLocation.model_validate(db_store_location)
+            # Load store brand details
+            query = (
+                select(StoreLocationModel, StoreBrandModel)
+                .join(StoreBrandModel, StoreLocationModel.store_brand_id == StoreBrandModel.id)
+                .where(StoreLocationModel.id == db_store_location.id)
+            )
+            result = await db.execute(query)
+            location, brand = result.first()
+            await db.commit()
+
+            return StoreLocationResponse(
+                id=location.id,
+                address=location.address,
+                created_at=location.created_at,
+                store_brand=StoreBrandInLocation(
+                    id=brand.id,
+                    name=brand.name
+                )
+            )
         except DatabaseError:
             await db.rollback()
             raise
@@ -44,7 +62,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             await db.rollback()
             raise DatabaseError(f"Failed to create store location: {str(e)}")
 
-    async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocationWithBrandResponse]:
+    async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocationResponse]:
         try:
             query = (
                 select(
@@ -58,7 +76,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             location = result.first()
             
             if location:
-                return StoreLocationWithBrandResponse(
+                return StoreLocationResponse(
                     id=location[0].id,
                     address=location[0].address,
                     created_at=location[0].created_at,
@@ -72,7 +90,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             logger.error(f"Error getting store location: {str(e)}")
             raise DatabaseError(f"Failed to get store location: {str(e)}")
 
-    async def get_all(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
+    async def get_all(self, db: AsyncSession) -> List[StoreLocationResponse]:
         try:
             query = (
                 select(
@@ -86,7 +104,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             locations = result.all()
             
             return [
-                StoreLocationWithBrandResponse(
+                StoreLocationResponse(
                     id=location[0].id,
                     address=location[0].address,
                     created_at=location[0].created_at,

@@ -9,20 +9,11 @@ class StoreBrandResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class StoreLocationResponse(BaseModel):
-    id: int
-    store_brand_id: int
-    address: str
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
 class StoreBrandInLocation(BaseModel):
     id: int
     name: str
 
-class StoreLocationWithBrandResponse(BaseModel):
+class StoreLocationResponse(BaseModel):
     id: int
     address: str
     created_at: datetime

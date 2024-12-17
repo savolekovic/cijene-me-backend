@@ -5,7 +5,7 @@ from app.api.dependencies.auth import get_current_privileged_user
 from app.domain.models.store.store_location import StoreLocation
 from app.infrastructure.logging.logger import get_logger
 from app.api.models.store import StoreLocationRequest
-from app.api.responses.store import StoreLocationResponse, StoreLocationWithBrandResponse
+from app.api.responses.store import StoreLocationResponse, StoreLocationResponse
 from fastapi_cache.decorator import cache
 from app.core.config import settings
 from app.core.container import Container
@@ -93,7 +93,7 @@ async def get_store_location(
 ):
     return await store_location_service.get_location(location_id, db)
 
-@router.get("/brand/{store_brand_id}", response_model=List[StoreLocation],
+@router.get("/brand/{store_brand_id}", response_model=List[StoreLocationResponse],
             responses={
                 404: {"description": "Not found",
                       "content": {
@@ -111,9 +111,9 @@ async def get_store_locations_by_brand(
     store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
     db: AsyncSession = Depends(get_db)
 ):
-     return await store_location_service.get_store_locations_by_brand(store_brand_id= store_brand_id, db=db)
+     return await store_location_service.get_store_locations_by_brand(store_brand_id=store_brand_id, db=db)
 
-@router.get("/", response_model=List[StoreLocationWithBrandResponse])
+@router.get("/", response_model=List[StoreLocationResponse])
 @cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_store_locations(

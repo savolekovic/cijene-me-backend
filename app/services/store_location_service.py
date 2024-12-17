@@ -1,4 +1,4 @@
-from app.api.responses.store import StoreLocationWithBrandResponse
+from app.api.responses.store import StoreLocationResponse
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store import StoreLocation
@@ -14,7 +14,7 @@ class StoreLocationService:
         self.store_location_repo = store_location_repo
         self.cache_manager = cache_manager
 
-    async def create_location(self, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocation:
+    async def create_location(self, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocationResponse:
         try:
             logger.info(f"Creating new store location for brand {store_brand_id}")
             location = await self.store_location_repo.create(store_brand_id, address, db)
@@ -31,7 +31,7 @@ class StoreLocationService:
             logger.error(f"Error creating store location: {str(e)}")
             raise
 
-    async def get_all_store_locations(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
+    async def get_all_store_locations(self, db: AsyncSession) -> List[StoreLocationResponse]:
         try:
             logger.info("Fetching all store locations with brand details")
             return await self.store_location_repo.get_all(db)
@@ -39,7 +39,7 @@ class StoreLocationService:
             logger.error(f"Error fetching store locations with details: {str(e)}")
             raise
 
-    async def get_location(self, location_id: int, db: AsyncSession) -> StoreLocationWithBrandResponse:
+    async def get_location(self, location_id: int, db: AsyncSession) -> StoreLocationResponse:
         try:
             logger.info(f"Fetching store location with id: {location_id}")
             location = await self.store_location_repo.get(location_id, db)
@@ -51,8 +51,7 @@ class StoreLocationService:
             logger.error(f"Error fetching store location {location_id}: {str(e)}")
             raise
 
-    async def get_store_locations_by_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:
-        """Get all store locations for a specific store brand"""
+    async def get_store_locations_by_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocationResponse]:
         try:
             logger.info(f"Fetching store locations for brand: {store_brand_id}")
             locations = await self.store_location_repo.get_by_store_brand(store_brand_id, db)
@@ -62,7 +61,7 @@ class StoreLocationService:
             logger.error(f"Error fetching locations for brand {store_brand_id}: {str(e)}")
             raise
 
-    async def update_location(self, location_id: int, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocation:
+    async def update_location(self, location_id: int, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocationResponse:
         try:
             logger.info(f"Updating store location {location_id}")
             location = StoreLocation(id=location_id, store_brand_id=store_brand_id, address=address)
