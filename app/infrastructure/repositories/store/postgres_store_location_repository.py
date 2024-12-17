@@ -14,11 +14,20 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         self.session = session
 
     async def create(self, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocation:
-        store_location_db = StoreLocationModel(store_brand_id=store_brand_id, address=address)
-        db.add(store_location_db)
-        await db.flush()
-        await db.commit()
-        return StoreLocation.model_validate(store_location_db)
+        try:
+            db_store_location = StoreLocationModel(
+                store_brand_id=store_brand_id,
+                address=address
+            )
+            db.add(db_store_location)
+            await db.flush()
+            await db.commit()
+
+            return StoreLocation.model_validate(db_store_location)
+        except Exception as e:
+            logger.error(f"Error creating store location: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to create store location: {str(e)}")
 
     async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocation]:
         result = await db.execute(
