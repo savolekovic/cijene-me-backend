@@ -44,12 +44,23 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             await db.rollback()
             raise DatabaseError(f"Failed to create store location: {str(e)}")
 
-    async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocation]:
-        result = await db.execute(
-            select(StoreLocationModel).where(StoreLocationModel.id == location_id)
-        )
-        store_location = result.scalar_one_or_none()
-        return StoreLocation.model_validate(store_location) if store_location else None
+    async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocationWithBrandResponse]:
+        try:
+            result = await db.execute(
+                select(
+                    StoreLocationModel,
+                    StoreBrandModel.name.label('store_brand_name')
+                )
+                .join(StoreBrandModel)
+                .where(StoreLocationModel.id == location_id)
+                .order_by(asc(StoreLocationModel.id))
+            )
+            store_location = result.scalar_one_or_none()
+            return StoreLocation.model_validate(store_location) if store_location else None
+        except Exception as e:
+            logger.error(f"Error getting store location {location_id}: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to get store location {location_id}: {str(e)}")
 
     async def get_all(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
         try:

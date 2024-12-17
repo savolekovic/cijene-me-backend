@@ -39,7 +39,7 @@ class StoreLocationService:
             logger.error(f"Error fetching store locations with details: {str(e)}")
             raise
 
-    async def get_location(self, location_id: int, db: AsyncSession) -> StoreLocation:
+    async def get_location(self, location_id: int, db: AsyncSession) -> StoreLocationWithBrandResponse:
         try:
             logger.info(f"Fetching store location with id: {location_id}")
             location = await self.store_location_repo.get(location_id, db)

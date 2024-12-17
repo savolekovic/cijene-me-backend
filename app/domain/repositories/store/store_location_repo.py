@@ -11,7 +11,7 @@ class StoreLocationRepository(ABC):
         pass
     
     @abstractmethod
-    async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocation]:
+    async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocationWithBrandResponse]:
         pass
     
     @abstractmethod
