@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from decimal import Decimal
 from app.domain.models.product.product_entry import ProductEntry
+from sqlalchemy.ext.asyncio import AsyncSession
 
 class ProductEntryRepository(ABC):
     @abstractmethod
@@ -10,26 +11,27 @@ class ProductEntryRepository(ABC):
         product_id: int, 
         store_brand_id: int,
         store_location_id: int,
-        price: Decimal
+        price: Decimal,
+        db: AsyncSession
     ) -> ProductEntry:
         pass
     
     @abstractmethod
-    async def get_all(self) -> List[ProductEntry]:
+    async def get_all(self, db: AsyncSession) -> List[ProductEntry]:
         pass
     
     @abstractmethod
-    async def get(self, entry_id: int) -> Optional[ProductEntry]:
+    async def get(self, entry_id: int, db: AsyncSession) -> Optional[ProductEntry]:
         pass
 
     @abstractmethod
-    async def get_by_product(self, product_id: int) -> List[ProductEntry]:
+    async def get_by_product(self, product_id: int, db: AsyncSession) -> List[ProductEntry]:
         pass
 
     @abstractmethod
-    async def get_by_store_brand(self, store_brand_id: int) -> List[ProductEntry]:
+    async def get_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[ProductEntry]:
         pass
 
     @abstractmethod
-    async def get_by_store_location(self, store_location_id: int) -> List[ProductEntry]:
+    async def get_by_store_location(self, store_location_id: int, db: AsyncSession) -> List[ProductEntry]:
         pass 
