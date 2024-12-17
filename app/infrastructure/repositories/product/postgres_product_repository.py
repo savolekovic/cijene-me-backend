@@ -1,13 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List
-from app.domain.models.product.product import Product, ProductWithCategory
+from app.domain.models.product.product import Product
 from app.domain.repositories.product.product_repo import ProductRepository
 from app.infrastructure.database.models.product import ProductModel
 from sqlalchemy import asc
 from app.core.exceptions import DatabaseError
 from app.infrastructure.database.models.product.category import CategoryModel
-from app.api.responses.product import ProductWithCategoryResponse
+from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class PostgresProductRepository(ProductRepository):
             query = (
                 select(
                     ProductModel,
-                    CategoryModel.name.label('category_name')
+                    CategoryModel
                 )
                 .join(CategoryModel)
                 .order_by(asc(ProductModel.name))
@@ -34,9 +34,12 @@ class PostgresProductRepository(ProductRepository):
                 ProductWithCategoryResponse(
                     id=product[0].id,
                     name=product[0].name,
+                    image_url=product[0].image_url,
                     created_at=product[0].created_at,
-                    category_id=product[0].category_id,
-                    category_name=product[1]
+                    category=CategoryInProduct(
+                        id=product[1].id,
+                        name=product[1].name
+                    )
                 )
                 for product in products
             ]
