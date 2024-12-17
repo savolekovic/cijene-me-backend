@@ -10,6 +10,8 @@ from app.core.config import settings
 from app.core.container import Container
 from app.services.store_brand_service import StoreBrandService
 from dependency_injector.wiring import Provide, inject
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.database import get_db
 
 logger = get_logger(__name__)
 
@@ -60,9 +62,10 @@ router = APIRouter(
 async def create_store_brand(
     store_brand: StoreBrandRequest,
     current_user: User = Depends(get_current_privileged_user),
-    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
+    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await store_brand_service.create_store_brand(store_brand.name)
+    return await store_brand_service.create_store_brand(store_brand.name, db)
 
 @router.get("/{store_brand_id}", response_model=StoreBrandResponse,
             responses={
@@ -80,17 +83,20 @@ async def create_store_brand(
 @inject
 async def get_store_brand(
     store_brand_id: int,
-    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
+    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await store_brand_service.get_store_brand(store_brand_id)
+    return await store_brand_service.get_store_brand(store_brand_id, db)
 
 @router.get("/", response_model=List[StoreBrandResponse])
-@cache(expire=settings.CACHE_TIME_LONG, namespace="store_brands")
+@cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_store_brands(
+    db: AsyncSession = Depends(get_db),
     store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
-):
-    return await store_brand_service.get_all_store_brands()
+) -> List[StoreBrandResponse]:
+    brands = await store_brand_service.get_all_store_brands(db)
+    return [StoreBrandResponse.model_validate(brand) for brand in brands]
 
 
 @router.put("/{store_brand_id}", 
@@ -136,9 +142,10 @@ async def update_store_brand(
     store_brand_id: int,
     store_brand: StoreBrandRequest,
     current_user: User = Depends(get_current_privileged_user),
-    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
+    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await store_brand_service.update_store_brand(store_brand_id, store_brand.name)
+    return await store_brand_service.update_store_brand(store_brand_id, store_brand.name, db)
 
 @router.delete("/{store_brand_id}",
     summary="Delete a store brand",
@@ -181,7 +188,8 @@ async def update_store_brand(
 async def delete_store_brand(
     store_brand_id: int,
     current_user: User = Depends(get_current_privileged_user),
-    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
+    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    await store_brand_service.delete_store_brand(store_brand_id)
+    await store_brand_service.delete_store_brand(store_brand_id, db)
     return {"message": "Store brand deleted successfully"} 
