@@ -10,7 +10,7 @@ from app.infrastructure.database.models.product.product import ProductModel
 from app.infrastructure.database.models.store.store_brand import StoreBrandModel
 from app.infrastructure.database.models.store.store_location import StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product_entry import ProductEntryWithDetails
+from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry
 
 logger = get_logger(__name__)
 
@@ -51,26 +51,6 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             logger.error(f"Error creating product entry: {str(e)}")
             raise DatabaseError(f"Failed to create product entry: {str(e)}")
 
-    async def get_all(self, db: AsyncSession) -> List[ProductEntry]:
-        try:
-            result = await db.execute(select(ProductEntryModel))
-            product_entries = result.scalars().all()
-            
-            return [
-                ProductEntry(
-                    id=entry.id,
-                    product_id=entry.product_id,
-                    store_brand_id=entry.store_brand_id,
-                    store_location_id=entry.store_location_id,
-                    price=entry.price,
-                    created_at=entry.created_at
-                ) 
-                for entry in product_entries
-            ]
-        except Exception as e:
-            logger.error(f"Error getting all product entries: {str(e)}")
-            raise DatabaseError(f"Failed to get product entries: {str(e)}")
-
     async def get(self, entry_id: int, db: AsyncSession) -> Optional[ProductEntry]:
         result = await db.execute(
             select(ProductEntryModel).where(ProductEntryModel.id == entry_id)
@@ -99,14 +79,14 @@ class PostgresProductEntryRepository(ProductEntryRepository):
         product_entry = result.scalar_one_or_none()
         return ProductEntry.model_validate(product_entry) if product_entry else None
 
-    async def get_all_with_details(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
+    async def get_all(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
             query = (
                 select(
                     ProductEntryModel,
-                    ProductModel.name.label('product_name'),
-                    StoreLocationModel.address.label('store_location_address'),
-                    StoreBrandModel.name.label('store_brand_name')
+                    ProductModel,
+                    StoreLocationModel,
+                    StoreBrandModel
                 )
                 .join(ProductModel, ProductEntryModel.product_id == ProductModel.id)
                 .join(StoreLocationModel, ProductEntryModel.store_location_id == StoreLocationModel.id)
@@ -122,12 +102,18 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                     id=entry[0].id,
                     price=entry[0].price,
                     created_at=entry[0].created_at,
-                    product_id=entry[0].product_id,
-                    product_name=entry[1],
-                    store_location_id=entry[0].store_location_id,
-                    store_location_address=entry[2],
-                    store_brand_id=entry[0].store_brand_id,
-                    store_brand_name=entry[3]
+                    product=ProductInEntry(
+                        id=entry[1].id,
+                        name=entry[1].name
+                    ),
+                    store_location=StoreLocationInEntry(
+                        id=entry[2].id,
+                        address=entry[2].address,
+                        store_brand=StoreBrandInEntry(
+                            id=entry[3].id,
+                            name=entry[3].name
+                        )
+                    )
                 )
                 for entry in entries
             ]

@@ -52,7 +52,7 @@ class ProductEntryService:
     async def get_all_entries(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
             logger.info("Fetching all product entries with details")
-            return await self.product_entry_repo.get_all_with_details(db)
+            return await self.product_entry_repo.get_all(db)
         except Exception as e:
             logger.error(f"Error fetching product entries with details: {str(e)}")
             raise 
