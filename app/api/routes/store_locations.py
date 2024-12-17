@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.core.container import Container
 from app.services.store_location_service import StoreLocationService
 from dependency_injector.wiring import Provide, inject
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.database import get_db
 
 logger = get_logger(__name__)
 
@@ -61,11 +63,13 @@ router = APIRouter(
 async def create_store_location(
     store_location: StoreLocationRequest,
     current_user: User = Depends(get_current_privileged_user),
-    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
+    db: AsyncSession = Depends(get_db)
 ):
     return await store_location_service.create_location(
         store_brand_id=store_location.store_brand_id,
-        address=store_location.address
+        address=store_location.address,
+        db=db
     )
 
 @router.get("/{location_id}", response_model=StoreLocationResponse,
@@ -84,9 +88,10 @@ async def create_store_location(
 @inject
 async def get_store_location(
     location_id: int,
-    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await store_location_service.get_location(location_id)
+    return await store_location_service.get_location(location_id, db)
 
 @router.get("/brand/{store_brand_id}", response_model=List[StoreLocation],
             responses={
@@ -103,17 +108,19 @@ async def get_store_location(
 @inject
 async def get_store_locations_by_brand(
     store_brand_id: int,
-     store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-     return await store_location_service.get_store_locations_by_brand(store_brand_id= store_brand_id)
+     return await store_location_service.get_store_locations_by_brand(store_brand_id= store_brand_id, db=db)
 
 @router.get("/", response_model=List[StoreLocationWithBrandResponse])
 @cache(expire=settings.CACHE_TIME_LONG, namespace="store_locations")
 @inject
 async def get_all_store_locations(
-    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-     return await store_location_service.get_all_locations()
+     return await store_location_service.get_all_locations(db=db)
    
 
 @router.put("/{location_id}", 
@@ -159,7 +166,8 @@ async def update_store_location(
     location_id: int,
     store_location: StoreLocationRequest,
     current_user: User = Depends(get_current_privileged_user),
-    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
+    db: AsyncSession = Depends(get_db)
 ):
     return await store_location_service.update_location(
         location_id=location_id,
@@ -208,7 +216,8 @@ async def update_store_location(
 async def delete_store_location(
     location_id: int,
     current_user: User = Depends(get_current_privileged_user),
-    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
+    store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    await store_location_service.delete_location(location_id)
+    await store_location_service.delete_location(location_id, db)
     return {"message": "Store location deleted successfully"} 
