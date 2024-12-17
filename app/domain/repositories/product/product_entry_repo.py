@@ -14,7 +14,7 @@ class ProductEntryRepository(ABC):
         store_location_id: int,
         price: Decimal,
         db: AsyncSession
-    ) -> ProductEntry:
+    ) -> ProductEntryWithDetails:
         pass
     
     @abstractmethod

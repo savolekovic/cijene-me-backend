@@ -25,8 +25,9 @@ class PostgresProductEntryRepository(ProductEntryRepository):
         store_location_id: int,
         price: Decimal,
         db: AsyncSession
-    ) -> ProductEntry:
+    ) -> ProductEntryWithDetails:
         try:
+            # Create the entry
             product_entry_db = ProductEntryModel(
                 product_id=product_id,
                 store_brand_id=store_brand_id,
@@ -35,16 +36,42 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             )
             db.add(product_entry_db)
             await db.flush()
+
+            # Load related models in a single query
+            query = (
+                select(
+                    ProductEntryModel,
+                    ProductModel,
+                    StoreLocationModel,
+                    StoreBrandModel
+                )
+                .join(ProductModel, ProductEntryModel.product_id == ProductModel.id)
+                .join(StoreLocationModel, ProductEntryModel.store_location_id == StoreLocationModel.id)
+                .join(StoreBrandModel, ProductEntryModel.store_brand_id == StoreBrandModel.id)
+                .where(ProductEntryModel.id == product_entry_db.id)
+            )
+            
+            result = await db.execute(query)
+            entry = result.first()
             await db.commit()
             
-            # Convert to Pydantic model before returning
-            return ProductEntry(
-                id=product_entry_db.id,
-                product_id=product_entry_db.product_id,
-                store_brand_id=product_entry_db.store_brand_id,
-                store_location_id=product_entry_db.store_location_id,
-                price=product_entry_db.price,
-                created_at=product_entry_db.created_at
+            # Convert to response model
+            return ProductEntryWithDetails(
+                id=entry[0].id,
+                price=float(entry[0].price),
+                created_at=entry[0].created_at,
+                product=ProductInEntry(
+                    id=entry[1].id,
+                    name=entry[1].name
+                ),
+                store_location=StoreLocationInEntry(
+                    id=entry[2].id,
+                    address=entry[2].address,
+                    store_brand=StoreBrandInEntry(
+                        id=entry[3].id,
+                        name=entry[3].name
+                    )
+                )
             )
         except Exception as e:
             await db.rollback()

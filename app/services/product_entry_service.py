@@ -28,7 +28,7 @@ class ProductEntryService:
         store_location_id: int,
         price: Decimal,
         db: AsyncSession
-    ) -> ProductEntry:
+    ) -> ProductEntryWithDetails:
         try:
             # Get store location to verify it exists and get store_brand_id
             store_location = await self.store_location_repo.get(store_location_id, db)
@@ -57,7 +57,7 @@ class ProductEntryService:
             logger.error(f"Error fetching product entries with details: {str(e)}")
             raise 
 
-    async def get_entry(self, entry_id: int, db: AsyncSession) -> ProductEntry:
+    async def get_entry(self, entry_id: int, db: AsyncSession) -> ProductEntryWithDetails:
         try:
             logger.info(f"Fetching price entry with id: {entry_id}")
             entry = await self.product_entry_repo.get(entry_id, db)
@@ -69,7 +69,7 @@ class ProductEntryService:
             logger.error(f"Error fetching price entry {entry_id}: {str(e)}")
             raise
 
-    async def get_entries_by_product(self, product_id: int, db: AsyncSession) -> List[ProductEntry]:
+    async def get_entries_by_product(self, product_id: int, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
             logger.info(f"Fetching price entries for product: {product_id}")
             return await self.product_entry_repo.get_by_product(product_id, db)
@@ -77,7 +77,7 @@ class ProductEntryService:
             logger.error(f"Error fetching price entries for product {product_id}: {str(e)}")
             raise
 
-    async def get_entries_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[ProductEntry]:
+    async def get_entries_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
             logger.info(f"Fetching price entries for store brand: {store_brand_id}")
             return await self.product_entry_repo.get_by_store_brand(store_brand_id, db)
@@ -85,7 +85,7 @@ class ProductEntryService:
             logger.error(f"Error fetching price entries for store brand {store_brand_id}: {str(e)}")
             raise
 
-    async def get_entries_by_store_location(self, store_location_id: int, db: AsyncSession) -> List[ProductEntry]:
+    async def get_entries_by_store_location(self, store_location_id: int, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
             logger.info(f"Fetching price entries for store location: {store_location_id}")
             return await self.product_entry_repo.get_by_store_location(store_location_id, db)
