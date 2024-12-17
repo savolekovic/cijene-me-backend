@@ -25,3 +25,10 @@ class AuthenticationError(HTTPException):
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         ) 
+
+class ConflictError(HTTPException):
+    def __init__(self, detail: str):
+        super().__init__(
+            status_code=409,
+            detail=detail
+        ) 
