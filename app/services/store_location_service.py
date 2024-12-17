@@ -34,7 +34,7 @@ class StoreLocationService:
     async def get_all_store_locations(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
         try:
             logger.info("Fetching all store locations with brand details")
-            return await self.store_location_repo.get_all_with_brand_details(db)
+            return await self.store_location_repo.get_all(db)
         except Exception as e:
             logger.error(f"Error fetching store locations with details: {str(e)}")
             raise
