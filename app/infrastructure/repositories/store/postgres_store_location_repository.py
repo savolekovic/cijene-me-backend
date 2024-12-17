@@ -15,6 +15,17 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
 
     async def create(self, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocation:
         try:
+            # Check for existing location with same address and brand
+            existing_location = await db.execute(
+                select(StoreLocationModel)
+                .where(
+                    StoreLocationModel.store_brand_id == store_brand_id,
+                    StoreLocationModel.address == address
+                )
+            )
+            if existing_location.scalar_one_or_none():
+                raise DatabaseError(f"Store location already exists for brand {store_brand_id} at address: {address}")
+
             db_store_location = StoreLocationModel(
                 store_brand_id=store_brand_id,
                 address=address
@@ -24,6 +35,9 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             await db.commit()
 
             return StoreLocation.model_validate(db_store_location)
+        except DatabaseError:
+            await db.rollback()
+            raise
         except Exception as e:
             logger.error(f"Error creating store location: {str(e)}")
             await db.rollback()
