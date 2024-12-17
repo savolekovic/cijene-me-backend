@@ -67,6 +67,7 @@ class Container(containers.DeclarativeContainer):
     product_entry_service = providers.Factory(
         ProductEntryService,
         product_entry_repo=product_entry_repository,
+        store_location_repo=store_location_repository,
         cache_manager=cache_manager
     ) 
     

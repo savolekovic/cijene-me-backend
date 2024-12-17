@@ -1,4 +1,5 @@
 from app.domain.repositories.product.product_entry_repo import ProductEntryRepository
+from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.product import ProductEntry
 from app.infrastructure.logging.logger import get_logger
@@ -10,8 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 logger = get_logger(__name__)
 
 class ProductEntryService:
-    def __init__(self, product_entry_repo: ProductEntryRepository, cache_manager: CacheManager):
+    def __init__(
+        self, 
+        product_entry_repo: ProductEntryRepository,
+        store_location_repo: StoreLocationRepository,
+        cache_manager: CacheManager
+    ):
         self.product_entry_repo = product_entry_repo
+        self.store_location_repo = store_location_repo
         self.cache_manager = cache_manager
 
     async def create_product_entry(
