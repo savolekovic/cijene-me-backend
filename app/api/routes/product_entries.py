@@ -13,6 +13,7 @@ from app.services.product_entry_service import ProductEntryService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.database import get_db
+from app.api.responses.product_entry import ProductEntryWithDetails
 
 logger = get_logger(__name__)
 
@@ -73,14 +74,14 @@ async def create_product_entry(
         db=db
     )
 
-@router.get("/", response_model=List[ProductEntry])
+@router.get("/", response_model=List[ProductEntryWithDetails])
 @cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
 @inject
 async def get_all_product_entries(
     product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
     db: AsyncSession = Depends(get_db)
 ):
-    return await product_entry_service.get_all_entries(db=db)
+    return await product_entry_service.get_all_entries(db)
 
 @router.get("/product/{product_id}", response_model=List[ProductEntry],
             responses={

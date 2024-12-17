@@ -6,9 +6,9 @@ from app.domain.repositories.product.product_repo import ProductRepository
 from app.infrastructure.database.models.product import ProductModel
 from sqlalchemy import asc
 from app.core.exceptions import DatabaseError
-import logging
-
 from app.infrastructure.database.models.product.category import CategoryModel
+from app.api.responses.product import ProductWithCategoryResponse
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -16,25 +16,33 @@ class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
         pass
 
-    async def get_all_with_categories(self, db: AsyncSession) -> List[ProductWithCategory]:
-        query = select(ProductModel, CategoryModel.name.label('category_name'))\
-            .join(CategoryModel)\
-            .order_by(asc(ProductModel.name))
-        
-        result = await db.execute(query)
-        products_with_categories = result.all()
-        
-        return [
-            ProductWithCategory(
-                id=product.id,
-                name=product.name,
-                image_url=product.image_url,
-                category_id=product.category_id,
-                category_name=category_name,
-                created_at=product.created_at
+    async def get_all_with_categories(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
+        try:
+            query = (
+                select(
+                    ProductModel,
+                    CategoryModel.name.label('category_name')
+                )
+                .join(CategoryModel)
+                .order_by(asc(ProductModel.name))
             )
-            for product, category_name in products_with_categories
-        ] 
+            
+            result = await db.execute(query)
+            products = result.all()
+            
+            return [
+                ProductWithCategoryResponse(
+                    id=product[0].id,
+                    name=product[0].name,
+                    created_at=product[0].created_at,
+                    category_id=product[0].category_id,
+                    category_name=product[1]
+                )
+                for product in products
+            ]
+        except Exception as e:
+            logger.error(f"Error getting products with categories: {str(e)}")
+            raise DatabaseError(f"Failed to get products: {str(e)}")
 
     async def create(self, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:

@@ -114,13 +114,13 @@ async def get_store_locations_by_brand(
      return await store_location_service.get_store_locations_by_brand(store_brand_id= store_brand_id, db=db)
 
 @router.get("/", response_model=List[StoreLocationWithBrandResponse])
-@cache(expire=settings.CACHE_TIME_LONG, namespace="store_locations")
+@cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_store_locations(
     store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service]),
     db: AsyncSession = Depends(get_db)
 ):
-     return await store_location_service.get_all_locations(db=db)
+    return await store_location_service.get_all_store_locations(db)
    
 
 @router.put("/{location_id}", 

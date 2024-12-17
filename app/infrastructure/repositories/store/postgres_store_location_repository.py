@@ -1,11 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, asc
 from typing import List, Optional
-from app.core.exceptions import DatabaseError, NotFoundError
+from app.core.exceptions import DatabaseError
 from app.domain.models.store.store_location import StoreLocation
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
+from app.api.responses.store import StoreLocationWithBrandResponse
 
 logger = get_logger(__name__)
 
@@ -50,26 +51,29 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         store_location = result.scalar_one_or_none()
         return StoreLocation.model_validate(store_location) if store_location else None
 
-    async def get_all(self, db: AsyncSession) -> List[StoreLocation]:
+    async def get_all(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
         try:
             result = await db.execute(
-                select(StoreLocationModel, StoreBrandModel.name.label('store_brand_name'))
+                select(
+                    StoreLocationModel,
+                    StoreBrandModel.name.label('store_brand_name')
+                )
                 .join(StoreBrandModel)
                 .order_by(asc(StoreLocationModel.id))
             )
             locations = result.all()
             return [
-                StoreLocation(
+                StoreLocationWithBrandResponse(
                     id=location[0].id,
-                    store_brand_id=location[0].store_brand_id,
                     address=location[0].address,
                     created_at=location[0].created_at,
+                    store_brand_id=location[0].store_brand_id,
                     store_brand_name=location[1]
-                ) 
+                )
                 for location in locations
             ]
         except Exception as e:
-            logger.error(f"Error getting all store locations: {str(e)}")
+            logger.error(f"Error getting store locations with details: {str(e)}")
             raise DatabaseError(f"Failed to get store locations: {str(e)}")
 
     async def get_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:

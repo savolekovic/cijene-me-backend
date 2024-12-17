@@ -74,11 +74,11 @@ async def create_product(
     )
 
 @router.get("/", response_model=List[ProductWithCategoryResponse])
-@cache(expire=settings.CACHE_TIME_MEDIUM)
+@cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_products(
-    db: AsyncSession = Depends(get_db),
-    product_service: ProductService = Depends(Provide[Container.product_service])
+    product_service: ProductService = Depends(Provide[Container.product_service]),
+    db: AsyncSession = Depends(get_db)
 ):
     return await product_service.get_all_products(db)
 

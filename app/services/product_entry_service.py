@@ -1,3 +1,4 @@
+from app.api.responses.product_entry import ProductEntryWithDetails
 from app.domain.repositories.product.product_entry_repo import ProductEntryRepository
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
@@ -48,13 +49,13 @@ class ProductEntryService:
             logger.error(f"Error creating product entry: {str(e)}")
             raise
 
-    async def get_all_entries(self, db: AsyncSession) -> List[ProductEntry]:
+    async def get_all_entries(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
-            logger.info("Fetching all price entries")
+            logger.info("Fetching all product entries with details")
             return await self.product_entry_repo.get_all(db)
         except Exception as e:
-            logger.error(f"Error fetching price entries: {str(e)}")
-            raise
+            logger.error(f"Error fetching product entries with details: {str(e)}")
+            raise 
 
     async def get_entry(self, entry_id: int, db: AsyncSession) -> ProductEntry:
         try:
@@ -90,4 +91,4 @@ class ProductEntryService:
             return await self.product_entry_repo.get_by_store_location(store_location_id, db)
         except Exception as e:
             logger.error(f"Error fetching price entries for store location {store_location_id}: {str(e)}")
-            raise 
+            raise

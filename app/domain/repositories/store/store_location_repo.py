@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from app.api.responses.store import StoreLocationWithBrandResponse
 from app.domain.models.store.store_location import StoreLocation
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +15,7 @@ class StoreLocationRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession) -> List[StoreLocation]:
+    async def get_all(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
         pass
     
     @abstractmethod

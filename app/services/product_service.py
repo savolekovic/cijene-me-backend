@@ -6,6 +6,7 @@ from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.responses.product import ProductWithCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -39,12 +40,12 @@ class ProductService:
             logger.error(f"Error creating product: {str(e)}")
             raise
 
-    async def get_all_products(self, db: AsyncSession) -> List[ProductWithCategory]:
+    async def get_all_products(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
         try:
             logger.info("Fetching all products with categories")
             return await self.product_repo.get_all_with_categories(db)
         except Exception as e:
-            logger.error(f"Error fetching all products: {str(e)}")
+            logger.error(f"Error fetching products with categories: {str(e)}")
             raise
 
     async def get_product(self, product_id: int, db: AsyncSession) -> Product:

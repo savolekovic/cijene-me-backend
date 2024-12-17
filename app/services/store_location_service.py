@@ -1,3 +1,4 @@
+from app.api.responses.store import StoreLocationWithBrandResponse
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store import StoreLocation
@@ -30,12 +31,12 @@ class StoreLocationService:
             logger.error(f"Error creating store location: {str(e)}")
             raise
 
-    async def get_all_locations(self, db: AsyncSession) -> List[StoreLocation]:
+    async def get_all_store_locations(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
         try:
-            logger.info("Fetching all store locations")
-            return await self.store_location_repo.get_all(db)
+            logger.info("Fetching all store locations with brand details")
+            return await self.store_location_repo.get_all_with_brand_details(db)
         except Exception as e:
-            logger.error(f"Error fetching store locations: {str(e)}")
+            logger.error(f"Error fetching store locations with details: {str(e)}")
             raise
 
     async def get_location(self, location_id: int, db: AsyncSession) -> StoreLocation:

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from decimal import Decimal
+from app.api.responses.product_entry import ProductEntryWithDetails
 from app.domain.models.product.product_entry import ProductEntry
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +18,7 @@ class ProductEntryRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession) -> List[ProductEntry]:
+    async def get_all(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
         pass
     
     @abstractmethod
