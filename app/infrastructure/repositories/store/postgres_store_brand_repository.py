@@ -3,7 +3,7 @@ from sqlalchemy import asc, select
 from typing import List, Optional
 from app.domain.models.store.store_brand import StoreBrand
 from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
-from app.infrastructure.database.models.store import StoreBrandModel
+from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
 
@@ -74,6 +74,18 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
 
     async def delete(self, store_brand_id: int, db: AsyncSession) -> bool:
         try:
+            # First check if there are any associated store locations
+            locations_result = await db.execute(
+                select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
+            )
+            locations = locations_result.scalars().all()
+            if locations:
+                raise DatabaseError(
+                    f"Cannot delete store brand {store_brand_id} because it has {len(locations)} associated store locations. "
+                    "Please delete all store locations first."
+                )
+
+            # If no locations exist, proceed with deletion
             result = await db.execute(
                 select(StoreBrandModel).where(StoreBrandModel.id == store_brand_id)
             )
