@@ -16,7 +16,7 @@ class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
         pass
 
-    async def get_all_with_categories(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
+    async def get_all(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
         try:
             query = (
                 select(
@@ -70,12 +70,20 @@ class PostgresProductRepository(ProductRepository):
             await db.rollback()
             raise DatabaseError(f"Failed to create product: {str(e)}")
 
-    async def get(self, product_id: int, db: AsyncSession) -> Optional[Product]:
+    async def get(self, product_id: int, db: AsyncSession) -> Optional[ProductWithCategoryResponse]:
         try:
-            result = await db.execute(
-                select(ProductModel).where(ProductModel.id == product_id)
+            query = (
+                select(
+                    ProductModel,
+                    CategoryModel
+                )
+                .join(CategoryModel)
+                .where(ProductModel.id == product_id)
+                .order_by(asc(ProductModel.name))
             )
+            result = await db.execute(query)
             product = result.scalar_one_or_none()
+            
             if product:
                 return Product(
                     id=product.id,
@@ -88,25 +96,6 @@ class PostgresProductRepository(ProductRepository):
         except Exception as e:
             logger.error(f"Error getting product: {str(e)}")
             raise DatabaseError(f"Failed to get product: {str(e)}")
-
-    async def get_all(self, db: AsyncSession) -> List[Product]:
-        try:
-            result = await db.execute(
-                select(ProductModel).order_by(asc(ProductModel.name))
-            )
-            products = result.scalars().all()
-            return [
-                Product(
-                    id=p.id,
-                    name=p.name,
-                    image_url=p.image_url,
-                    category_id=p.category_id,
-                    created_at=p.created_at
-                ) for p in products
-            ]
-        except Exception as e:
-            logger.error(f"Error getting all products: {str(e)}")
-            raise DatabaseError(f"Failed to get products: {str(e)}")
 
     async def update(self, product_id: int, product: Product, db: AsyncSession) -> Optional[Product]:
         try:

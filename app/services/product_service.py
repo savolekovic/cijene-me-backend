@@ -43,12 +43,12 @@ class ProductService:
     async def get_all_products(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
         try:
             logger.info("Fetching all products with categories")
-            return await self.product_repo.get_all_with_categories(db)
+            return await self.product_repo.get_all(db)
         except Exception as e:
             logger.error(f"Error fetching products with categories: {str(e)}")
             raise
 
-    async def get_product(self, product_id: int, db: AsyncSession) -> Product:
+    async def get_product(self, product_id: int, db: AsyncSession) -> ProductWithCategoryResponse:
         try:
             logger.info(f"Fetching product with id: {product_id}")
             product = await self.product_repo.get(product_id, db)
