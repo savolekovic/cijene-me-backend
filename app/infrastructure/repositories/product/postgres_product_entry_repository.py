@@ -52,9 +52,24 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             raise DatabaseError(f"Failed to create product entry: {str(e)}")
 
     async def get_all(self, db: AsyncSession) -> List[ProductEntry]:
-        result = await db.execute(select(ProductEntryModel))
-        product_entries = result.scalars().all()
-        return [ProductEntry.model_validate(product_entry) for product_entry in product_entries]
+        try:
+            result = await db.execute(select(ProductEntryModel))
+            product_entries = result.scalars().all()
+            
+            return [
+                ProductEntry(
+                    id=entry.id,
+                    product_id=entry.product_id,
+                    store_brand_id=entry.store_brand_id,
+                    store_location_id=entry.store_location_id,
+                    price=entry.price,
+                    created_at=entry.created_at
+                ) 
+                for entry in product_entries
+            ]
+        except Exception as e:
+            logger.error(f"Error getting all product entries: {str(e)}")
+            raise DatabaseError(f"Failed to get product entries: {str(e)}")
 
     async def get(self, entry_id: int, db: AsyncSession) -> Optional[ProductEntry]:
         result = await db.execute(
