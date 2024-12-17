@@ -172,7 +172,8 @@ async def update_store_location(
     return await store_location_service.update_location(
         location_id=location_id,
         store_brand_id=store_location.store_brand_id,
-        address=store_location.address
+        address=store_location.address,
+        db=db
     )
 
 @router.delete("/{location_id}",

@@ -10,6 +10,8 @@ from app.core.config import settings
 from app.core.container import Container
 from app.services.product_entry_service import ProductEntryService
 from dependency_injector.wiring import Provide, inject
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.database import get_db
 
 logger = get_logger(__name__)
 
@@ -63,22 +65,25 @@ async def create_product_entry(
     store_location_id: int,
     price: Decimal,
     current_user: User = Depends(get_current_privileged_user),
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
 ):
     return await product_entry_service.create_entry(
         product_id=product_id,
         store_brand_id=store_brand_id,
         store_location_id=store_location_id,
-        price=price
+        price=price,
+        db=db
     )
 
 @router.get("/", response_model=List[ProductEntry])
 @cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
 @inject
 async def get_all_product_entries(
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await product_entry_service.get_all_entries()
+    return await product_entry_service.get_all_entries(db=db)
 
 @router.get("/product/{product_id}", response_model=List[ProductEntry],
             responses={
@@ -96,9 +101,10 @@ async def get_all_product_entries(
 @inject
 async def get_product_entries_by_product(
     product_id: int,
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await product_entry_service.get_entries_by_product(product_id)
+    return await product_entry_service.get_entries_by_product(product_id, db)
 
 @router.get("/store-brand/{store_brand_id}", response_model=List[ProductEntry],
             responses={
@@ -116,9 +122,10 @@ async def get_product_entries_by_product(
 @inject
 async def get_product_entries_by_store_brand(
     store_brand_id: int,
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-    return await product_entry_service.get_entries_by_store_brand(store_brand_id)
+    return await product_entry_service.get_entries_by_store_brand(store_brand_id, db)
 
 @router.get("/store-location/{store_location_id}", response_model=List[ProductEntry],
             responses={
@@ -136,9 +143,10 @@ async def get_product_entries_by_store_brand(
 @inject
 async def get_product_entries_by_store_location(
     store_location_id: int,
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-     return await product_entry_service.get_entries_by_store_location(store_location_id)
+     return await product_entry_service.get_entries_by_store_location(store_location_id, db)
 
 @router.get("/{entry_id}", response_model=ProductEntry,
             responses={
@@ -155,6 +163,7 @@ async def get_product_entries_by_store_location(
 @inject
 async def get_product_entry(
     entry_id: int,
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
 ):
-     return await product_entry_service.get_entry(entry_id=entry_id)
+     return await product_entry_service.get_entry(entry_id=entry_id, db=db)
