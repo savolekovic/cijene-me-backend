@@ -26,16 +26,30 @@ class PostgresProductEntryRepository(ProductEntryRepository):
         price: Decimal,
         db: AsyncSession
     ) -> ProductEntry:
-        product_entry_db = ProductEntryModel(
-            product_id=product_id,
-            store_brand_id=store_brand_id,
-            store_location_id=store_location_id,
-            price=price
-        )
-        db.add(product_entry_db)
-        await db.flush()
-        await db.commit()
-        return ProductEntry.model_validate(product_entry_db)
+        try:
+            product_entry_db = ProductEntryModel(
+                product_id=product_id,
+                store_brand_id=store_brand_id,
+                store_location_id=store_location_id,
+                price=price
+            )
+            db.add(product_entry_db)
+            await db.flush()
+            await db.commit()
+            
+            # Convert to Pydantic model before returning
+            return ProductEntry(
+                id=product_entry_db.id,
+                product_id=product_entry_db.product_id,
+                store_brand_id=product_entry_db.store_brand_id,
+                store_location_id=product_entry_db.store_location_id,
+                price=product_entry_db.price,
+                created_at=product_entry_db.created_at
+            )
+        except Exception as e:
+            await db.rollback()
+            logger.error(f"Error creating product entry: {str(e)}")
+            raise DatabaseError(f"Failed to create product entry: {str(e)}")
 
     async def get_all(self, db: AsyncSession) -> List[ProductEntry]:
         result = await db.execute(select(ProductEntryModel))
