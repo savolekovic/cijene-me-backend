@@ -18,7 +18,11 @@ class ProductEntryRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
+    async def get_all(self, db: AsyncSession) -> List[ProductEntry]:
+        pass
+    
+    @abstractmethod
+    async def get_all_with_details(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
         pass
     
     @abstractmethod
