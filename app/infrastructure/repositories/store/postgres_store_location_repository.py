@@ -6,7 +6,7 @@ from app.domain.models.store.store_location import StoreLocation
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.store import StoreLocationWithBrandResponse
+from app.api.responses.store import StoreLocationWithBrandResponse, StoreBrandInLocation
 
 logger = get_logger(__name__)
 
@@ -46,45 +46,59 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
 
     async def get(self, location_id: int, db: AsyncSession) -> Optional[StoreLocationWithBrandResponse]:
         try:
-            result = await db.execute(
+            query = (
                 select(
                     StoreLocationModel,
-                    StoreBrandModel.name.label('store_brand_name')
+                    StoreBrandModel
                 )
                 .join(StoreBrandModel)
                 .where(StoreLocationModel.id == location_id)
-                .order_by(asc(StoreLocationModel.id))
             )
-            store_location = result.scalar_one_or_none()
-            return StoreLocation.model_validate(store_location) if store_location else None
+            result = await db.execute(query)
+            location = result.first()
+            
+            if location:
+                return StoreLocationWithBrandResponse(
+                    id=location[0].id,
+                    address=location[0].address,
+                    created_at=location[0].created_at,
+                    store_brand=StoreBrandInLocation(
+                        id=location[1].id,
+                        name=location[1].name
+                    )
+                )
+            return None
         except Exception as e:
-            logger.error(f"Error getting store location {location_id}: {str(e)}")
-            await db.rollback()
-            raise DatabaseError(f"Failed to get store location {location_id}: {str(e)}")
+            logger.error(f"Error getting store location: {str(e)}")
+            raise DatabaseError(f"Failed to get store location: {str(e)}")
 
     async def get_all(self, db: AsyncSession) -> List[StoreLocationWithBrandResponse]:
         try:
-            result = await db.execute(
+            query = (
                 select(
                     StoreLocationModel,
-                    StoreBrandModel.name.label('store_brand_name')
+                    StoreBrandModel
                 )
                 .join(StoreBrandModel)
                 .order_by(asc(StoreLocationModel.id))
             )
+            result = await db.execute(query)
             locations = result.all()
+            
             return [
                 StoreLocationWithBrandResponse(
                     id=location[0].id,
                     address=location[0].address,
                     created_at=location[0].created_at,
-                    store_brand_id=location[0].store_brand_id,
-                    store_brand_name=location[1]
+                    store_brand=StoreBrandInLocation(
+                        id=location[1].id,
+                        name=location[1].name
+                    )
                 )
                 for location in locations
             ]
         except Exception as e:
-            logger.error(f"Error getting store locations with details: {str(e)}")
+            logger.error(f"Error getting store locations: {str(e)}")
             raise DatabaseError(f"Failed to get store locations: {str(e)}")
 
     async def get_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:

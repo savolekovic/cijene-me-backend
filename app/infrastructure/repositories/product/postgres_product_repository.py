@@ -79,18 +79,20 @@ class PostgresProductRepository(ProductRepository):
                 )
                 .join(CategoryModel)
                 .where(ProductModel.id == product_id)
-                .order_by(asc(ProductModel.name))
             )
             result = await db.execute(query)
-            product = result.scalar_one_or_none()
+            product = result.first()
             
             if product:
-                return Product(
-                    id=product.id,
-                    name=product.name,
-                    image_url=product.image_url,
-                    category_id=product.category_id,
-                    created_at=product.created_at
+                return ProductWithCategoryResponse(
+                    id=product[0].id,
+                    name=product[0].name,
+                    image_url=product[0].image_url,
+                    created_at=product[0].created_at,
+                    category=CategoryInProduct(
+                        id=product[1].id,
+                        name=product[1].name
+                    )
                 )
             return None
         except Exception as e:
