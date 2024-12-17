@@ -126,23 +126,44 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         store_location = result.scalar_one_or_none()
         return StoreLocation.model_validate(store_location) if store_location else None
 
-    async def update(self, location_id: int, store_location: StoreLocation, db: AsyncSession) -> Optional[StoreLocation]:
+    async def update(self, location_id: int, store_location: StoreLocation, db: AsyncSession) -> Optional[StoreLocationResponse]:
         try:
+            # Get existing location
             result = await db.execute(
                 select(StoreLocationModel).where(StoreLocationModel.id == location_id)
             )
-            store_location_db = result.scalar_one_or_none()
-            if store_location_db:
-                store_location_db.name = store_location.name
+            db_store_location = result.scalar_one_or_none()
+            
+            if db_store_location:
+                # Update fields
+                db_store_location.store_brand_id = store_location.store_brand_id
+                db_store_location.address = store_location.address
                 await db.flush()
+
+                # Load store brand details for response
+                query = (
+                    select(StoreLocationModel, StoreBrandModel)
+                    .join(StoreBrandModel, StoreLocationModel.store_brand_id == StoreBrandModel.id)
+                    .where(StoreLocationModel.id == location_id)
+                )
+                result = await db.execute(query)
+                location, brand = result.first()
                 await db.commit()
-                return StoreLocation.model_validate(store_location_db)
-            logger.warning(f"Store location not found for update: {location_id}")
+
+                return StoreLocationResponse(
+                    id=location.id,
+                    address=location.address,
+                    created_at=location.created_at,
+                    store_brand=StoreBrandInLocation(
+                        id=brand.id,
+                        name=brand.name
+                    )
+                )
             return None
         except Exception as e:
-            logger.error(f"Error updating store location {location_id}: {str(e)}")
             await db.rollback()
-            raise
+            logger.error(f"Error updating store location: {str(e)}")
+            raise DatabaseError(f"Failed to update store location: {str(e)}")
 
     async def delete(self, location_id: int, db: AsyncSession) -> bool:
         result = await db.execute(

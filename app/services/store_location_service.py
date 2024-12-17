@@ -64,7 +64,11 @@ class StoreLocationService:
     async def update_location(self, location_id: int, store_brand_id: int, address: str, db: AsyncSession) -> StoreLocationResponse:
         try:
             logger.info(f"Updating store location {location_id}")
-            location = StoreLocation(id=location_id, store_brand_id=store_brand_id, address=address)
+            location = StoreLocation(
+                id=location_id,
+                store_brand_id=store_brand_id,
+                address=address
+            )
             updated_location = await self.store_location_repo.update(location_id, location, db)
             if not updated_location:
                 logger.warning(f"Store location not found: {location_id}")
