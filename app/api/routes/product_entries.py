@@ -23,7 +23,7 @@ router = APIRouter(
 )
 
 @router.post("/", 
-    response_model=ProductEntry,
+    response_model=ProductEntryWithDetails,
     summary="Create a new price entry",
     description="Create a new price entry for a product. Requires admin or moderator role.",
     responses={
@@ -62,15 +62,15 @@ router = APIRouter(
 )
 @inject
 async def create_product_entry(
-    product_entry_request: ProductEntryRequest,
+    entry: ProductEntryRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
-    db: AsyncSession = Depends(get_db)
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ):
     return await product_entry_service.create_product_entry(
-        product_id=product_entry_request.product_id,
-        store_location_id=product_entry_request.store_location_id,
-        price=product_entry_request.price,
+        product_id=entry.product_id,
+        store_location_id=entry.store_location_id,
+        price=entry.price,
         db=db
     )
 
