@@ -14,28 +14,31 @@ class ProductEntryService:
         self.product_entry_repo = product_entry_repo
         self.cache_manager = cache_manager
 
-    async def create_entry(
+    async def create_product_entry(
         self, 
         product_id: int,
-        store_brand_id: int,
         store_location_id: int,
         price: Decimal,
         db: AsyncSession
     ) -> ProductEntry:
         try:
-            logger.info(f"Creating new price entry for product {product_id}")
+            # Get store location to verify it exists and get store_brand_id
+            store_location = await self.store_location_repo.get(store_location_id, db)
+            if not store_location:
+                raise NotFoundError("Store Location", store_location_id)
+
+            # Create entry with store_brand_id from the location
             entry = await self.product_entry_repo.create(
                 product_id=product_id,
-                store_brand_id=store_brand_id,
+                store_brand_id=store_location.store_brand_id,
                 store_location_id=store_location_id,
                 price=price,
                 db=db
             )
-            logger.info(f"Created price entry with id: {entry.id}")
             await self.cache_manager.clear_product_related_caches()
             return entry
         except Exception as e:
-            logger.error(f"Error creating price entry: {str(e)}")
+            logger.error(f"Error creating product entry: {str(e)}")
             raise
 
     async def get_all_entries(self, db: AsyncSession) -> List[ProductEntry]:

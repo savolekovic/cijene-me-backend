@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from typing import List
 from decimal import Decimal
+from app.api.models.product_entry import ProductEntryRequest
 from app.domain.models.product import ProductEntry
 from app.domain.models.auth import User
 from app.api.dependencies.auth import get_current_privileged_user
@@ -30,7 +31,7 @@ router = APIRouter(
                 "application/json": {
                     "example": {
                         "error": "Authorization error",
-                        "message": "Unauthorized to update a category"
+                        "message": "Unauthorized to create a product entry"
                     }
                 }
             }},
@@ -39,7 +40,7 @@ router = APIRouter(
                 "application/json": {
                     "example": {
                         "error": "Forbidden error",
-                        "message": "Don't have permission to update a category"
+                        "message": "Don't have permission to create a product entry"
                     }
                 }
             }},
@@ -60,19 +61,15 @@ router = APIRouter(
 )
 @inject
 async def create_product_entry(
-    product_id: int,
-    store_brand_id: int,
-    store_location_id: int,
-    price: Decimal,
+    product_entry_request: ProductEntryRequest,
     current_user: User = Depends(get_current_privileged_user),
     product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
     db: AsyncSession = Depends(get_db)
 ):
-    return await product_entry_service.create_entry(
-        product_id=product_id,
-        store_brand_id=store_brand_id,
-        store_location_id=store_location_id,
-        price=price,
+    return await product_entry_service.create_product_entry(
+        product_id=product_entry_request.product_id,
+        store_location_id=product_entry_request.store_location_id,
+        price=product_entry_request.price,
         db=db
     )
 
