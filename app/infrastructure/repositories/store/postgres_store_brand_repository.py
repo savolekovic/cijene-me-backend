@@ -88,4 +88,22 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
         except Exception as e:
             logger.error(f"Error deleting store brand: {str(e)}")
             await db.rollback()
-            raise DatabaseError(f"Failed to delete store brand: {str(e)}") 
+            raise DatabaseError(f"Failed to delete store brand: {str(e)}")
+
+    async def get_all(self, db: AsyncSession) -> List[StoreBrand]:
+        try:
+            result = await db.execute(
+                select(StoreBrandModel).order_by(asc(StoreBrandModel.name))
+            )
+            brands = result.scalars().all()
+            return [
+                StoreBrand(
+                    id=brand.id,
+                    name=brand.name,
+                    created_at=brand.created_at
+                ) 
+                for brand in brands
+            ]
+        except Exception as e:
+            logger.error(f"Error getting all store brands: {str(e)}")
+            raise DatabaseError(f"Failed to get store brands: {str(e)}") 
