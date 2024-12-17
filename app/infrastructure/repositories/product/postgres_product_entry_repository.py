@@ -100,7 +100,7 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             return [
                 ProductEntryWithDetails(
                     id=entry[0].id,
-                    price=entry[0].price,
+                    price=float(entry[0].price),
                     created_at=entry[0].created_at,
                     product=ProductInEntry(
                         id=entry[1].id,

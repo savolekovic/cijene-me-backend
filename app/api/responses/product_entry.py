@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from pydantic import BaseModel
 
 class ProductInEntry(BaseModel):
@@ -17,7 +16,7 @@ class StoreLocationInEntry(BaseModel):
 
 class ProductEntryWithDetails(BaseModel):
     id: int
-    price: Decimal
+    price: float
     created_at: datetime
     product: ProductInEntry
     store_location: StoreLocationInEntry 
