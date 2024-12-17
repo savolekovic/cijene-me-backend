@@ -37,9 +37,26 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         return StoreLocation.model_validate(store_location) if store_location else None
 
     async def get_all(self, db: AsyncSession) -> List[StoreLocation]:
-        result = await db.execute(select(StoreLocationModel))
-        store_locations = result.scalars().all()
-        return [StoreLocation.model_validate(store_location) for store_location in store_locations]
+        try:
+            result = await db.execute(
+                select(StoreLocationModel, StoreBrandModel.name.label('store_brand_name'))
+                .join(StoreBrandModel)
+                .order_by(asc(StoreLocationModel.id))
+            )
+            locations = result.all()
+            return [
+                StoreLocation(
+                    id=location[0].id,
+                    store_brand_id=location[0].store_brand_id,
+                    address=location[0].address,
+                    created_at=location[0].created_at,
+                    store_brand_name=location[1]
+                ) 
+                for location in locations
+            ]
+        except Exception as e:
+            logger.error(f"Error getting all store locations: {str(e)}")
+            raise DatabaseError(f"Failed to get store locations: {str(e)}")
 
     async def get_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:
         result = await db.execute(
