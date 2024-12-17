@@ -2,7 +2,7 @@ from app.domain.repositories.store.store_location_repo import StoreLocationRepos
 from app.services.cache_service import CacheManager
 from app.domain.models.store import StoreLocation
 from app.infrastructure.logging.logger import get_logger
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import DatabaseError, NotFoundError, ConflictError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,12 @@ class StoreLocationService:
             logger.info(f"Created store location with id: {location.id}")
             await self.cache_manager.clear_store_related_caches()
             return location
+        except DatabaseError as e:
+            if "already exists" in str(e):
+                logger.warning(f"Attempted to create duplicate store location: {str(e)}")
+                raise ConflictError(f"Store location already exists with this address for the given brand")
+            logger.error(f"Database error creating store location: {str(e)}")
+            raise
         except Exception as e:
             logger.error(f"Error creating store location: {str(e)}")
             raise
