@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class ProductInEntry(BaseModel):
     id: int
     name: str
+    barcode: str
 
 class StoreBrandInEntry(BaseModel):
     id: int

@@ -8,6 +8,7 @@ class CategoryInProduct(BaseModel):
 class ProductWithCategoryResponse(BaseModel):
     id: int
     name: str
+    barcode: str
     image_url: str
     created_at: datetime
     category: CategoryInProduct
