@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class ProductRepository(ABC):
     @abstractmethod
-    async def create(self, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
+    async def create(self, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         pass
 
     @abstractmethod
@@ -27,4 +27,12 @@ class ProductRepository(ABC):
 
     @abstractmethod
     async def get_by_category(self, category_id: int, db: AsyncSession) -> List[Product]:
+        pass
+    
+    @abstractmethod
+    async def get_by_name(self, name: str, db: AsyncSession) -> Optional[Product]:
+        pass
+    
+    @abstractmethod
+    async def get_by_barcode(self, barcode: str, db: AsyncSession) -> Optional[Product]:
         pass
