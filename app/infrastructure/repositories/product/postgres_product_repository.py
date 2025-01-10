@@ -24,7 +24,7 @@ class PostgresProductRepository(ProductRepository):
                     CategoryModel
                 )
                 .join(CategoryModel)
-                .order_by(asc(ProductModel.name))
+                .order_by(asc(ProductModel.id))
             )
             
             result = await db.execute(query)
@@ -45,8 +45,8 @@ class PostgresProductRepository(ProductRepository):
                 for product in products
             ]
         except Exception as e:
-            logger.error(f"Error getting products with categories: {str(e)}")
-            raise DatabaseError(f"Failed to get products: {str(e)}")
+            logger.error(f"Error getting all products: {str(e)}")
+            raise DatabaseError(f"Failed to get all products: {str(e)}")
 
     async def create(self, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
