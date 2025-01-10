@@ -7,6 +7,7 @@ class ProductModel(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
+    barcode = Column(String, nullable=False, unique=True)
     image_url = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), default=get_current_time)

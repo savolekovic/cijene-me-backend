@@ -16,7 +16,7 @@ class ProductService:
         self.category_repo = category_repo
         self.cache_manager = cache_manager
 
-    async def create_product(self, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
+    async def create_product(self, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
             logger.info(f"Creating new product: {name} in category {category_id}")
             
@@ -26,13 +26,19 @@ class ProductService:
                 logger.error(f"Product with name {name} already exists")
                 raise ValidationError(f"Product with name '{name}' already exists")
             
+            # Check if product with same barcode exists
+            existing_product = await self.product_repo.get_by_barcode(barcode, db)
+            if existing_product:
+                logger.error(f"Product with barcode {barcode} already exists")
+                raise ValidationError(f"Product with barcode '{barcode}' already exists")
+            
             # Check if category exists
             category = await self.category_repo.get(category_id, db)
             if not category:
                 logger.error(f"Category {category_id} not found")
                 raise NotFoundError("Category", category_id)
             
-            product = await self.product_repo.create(name, image_url, category_id, db)
+            product = await self.product_repo.create(name, barcode, image_url, category_id, db)
             logger.info(f"Created product with id: {product.id}")
             await self.cache_manager.clear_product_related_caches()
             return product
@@ -64,6 +70,12 @@ class ProductService:
         try:
             logger.info(f"Updating product {product_id} with name: {name}")
             
+            # Get existing product to preserve barcode
+            existing_product = await self.product_repo.get(product_id, db)
+            if not existing_product:
+                logger.warning(f"Product not found for update: {product_id}")
+                raise NotFoundError("Product", product_id)
+            
             # Check if category exists
             category = await self.category_repo.get(category_id, db)
             if not category:
@@ -79,6 +91,7 @@ class ProductService:
             product = Product(
                 id=product_id,
                 name=name,
+                barcode=existing_product.barcode,
                 image_url=image_url,
                 category_id=category_id
             )
