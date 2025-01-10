@@ -62,7 +62,8 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 created_at=entry[0].created_at,
                 product=ProductInEntry(
                     id=entry[1].id,
-                    name=entry[1].name
+                    name=entry[1].name,
+                    barcode=entry[1].barcode
                 ),
                 store_location=StoreLocationInEntry(
                     id=entry[2].id,
@@ -131,7 +132,8 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                     created_at=entry[0].created_at,
                     product=ProductInEntry(
                         id=entry[1].id,
-                        name=entry[1].name
+                        name=entry[1].name,
+                        barcode=entry[1].barcode
                     ),
                     store_location=StoreLocationInEntry(
                         id=entry[2].id,
