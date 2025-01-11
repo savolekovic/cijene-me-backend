@@ -2,7 +2,7 @@ from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store.store_brand import StoreBrand
 from app.infrastructure.logging.logger import get_logger
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -62,10 +62,20 @@ class StoreBrandService:
     async def delete_store_brand(self, store_brand_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete store brand {store_brand_id}")
-            success = await self.store_brand_repo.delete(store_brand_id, db)
-            if not success:
+            
+            # First check if store brand exists
+            store_brand = await self.store_brand_repo.get(store_brand_id, db)
+            if not store_brand:
                 logger.warning(f"Store brand not found: {store_brand_id}")
                 raise NotFoundError("StoreBrand", store_brand_id)
+            
+            # Check if there are any locations for this brand
+            locations = await self.store_brand_repo.get_locations_for_brand(store_brand_id, db)
+            if locations:
+                logger.error(f"Cannot delete store brand {store_brand_id} because it has {len(locations)} locations")
+                raise ValidationError(f"Cannot delete store brand because it has {len(locations)} locations. Please delete these locations first.")
+            
+            success = await self.store_brand_repo.delete(store_brand_id, db)
             logger.info(f"Successfully deleted store brand {store_brand_id}")
             await self.cache_manager.clear_store_related_caches()
             return True

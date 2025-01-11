@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from app.domain.models.store.store_brand import StoreBrand
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.models.store.store_location import StoreLocationModel
 
 
 class StoreBrandRepository(ABC):
@@ -23,4 +24,9 @@ class StoreBrandRepository(ABC):
     
     @abstractmethod
     async def delete(self, store_brand_id: int, db: AsyncSession) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_locations_for_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocationModel]:
+        """Get all store locations for a specific brand."""
         pass
