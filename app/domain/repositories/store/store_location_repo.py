@@ -3,6 +3,7 @@ from typing import List, Optional
 from app.api.responses.store import StoreLocationResponse
 from app.domain.models.store.store_location import StoreLocation
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.database.models.product import ProductEntryModel
 
 
 class StoreLocationRepository(ABC):
@@ -28,4 +29,9 @@ class StoreLocationRepository(ABC):
     
     @abstractmethod
     async def delete(self, location_id: int, db: AsyncSession) -> bool:
+        pass
+    
+    @abstractmethod
+    async def get_product_entries_for_location(self, location_id: int, db: AsyncSession) -> List[ProductEntryModel]:
+        """Get all product entries for a specific store location."""
         pass 

@@ -5,6 +5,7 @@ from app.core.exceptions import DatabaseError
 from app.domain.models.store.store_location import StoreLocation
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
+from app.infrastructure.database.models.product import ProductEntryModel
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.store import StoreBrandInLocation, StoreLocationResponse
 
@@ -176,3 +177,24 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             await db.commit()
             return True
         return False
+
+    async def get_by_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:
+        try:
+            result = await db.execute(
+                select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
+            )
+            locations = result.scalars().all()
+            return [StoreLocation.model_validate(location) for location in locations]
+        except Exception as e:
+            logger.error(f"Error getting locations by brand: {str(e)}")
+            raise DatabaseError(f"Failed to get locations by brand: {str(e)}")
+
+    async def get_product_entries_for_location(self, location_id: int, db: AsyncSession) -> List[ProductEntryModel]:
+        try:
+            result = await db.execute(
+                select(ProductEntryModel).where(ProductEntryModel.store_location_id == location_id)
+            )
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting product entries for location {location_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get product entries for location: {str(e)}")

@@ -3,7 +3,7 @@ from app.domain.repositories.store.store_location_repo import StoreLocationRepos
 from app.services.cache_service import CacheManager
 from app.domain.models.store import StoreLocation
 from app.infrastructure.logging.logger import get_logger
-from app.core.exceptions import DatabaseError, NotFoundError, ConflictError
+from app.core.exceptions import DatabaseError, NotFoundError, ConflictError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -83,10 +83,20 @@ class StoreLocationService:
     async def delete_location(self, location_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete store location {location_id}")
-            success = await self.store_location_repo.delete(location_id, db)
-            if not success:
+            
+            # First check if location exists
+            location = await self.store_location_repo.get(location_id, db)
+            if not location:
                 logger.warning(f"Store location not found: {location_id}")
-                raise NotFoundError("Store location", location_id)
+                raise NotFoundError("StoreLocation", location_id)
+            
+            # Check if there are any product entries for this location
+            entries = await self.store_location_repo.get_product_entries_for_location(location_id, db)
+            if entries:
+                logger.error(f"Cannot delete store location {location_id} because it has {len(entries)} product entries")
+                raise ValidationError(f"Cannot delete store location because it has {len(entries)} price entries. Please delete these entries first.")
+            
+            await self.store_location_repo.delete(location_id, db)
             logger.info(f"Successfully deleted store location {location_id}")
             await self.cache_manager.clear_store_related_caches()
             return True

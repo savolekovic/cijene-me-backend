@@ -109,10 +109,21 @@ class ProductService:
     async def delete_product(self, product_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete product {product_id}")
-            success = await self.product_repo.delete(product_id, db)
-            if not success:
-                logger.warning(f"Product not found for deletion: {product_id}")
+            
+            # First check if product exists
+            product = await self.product_repo.get(product_id, db)
+            if not product:
+                logger.warning(f"Product not found: {product_id}")
                 raise NotFoundError("Product", product_id)
+            
+            # Check if there are any price entries for this product
+            entries = await self.product_repo.get_product_entries(product_id, db)
+            if entries:
+                logger.error(f"Cannot delete product {product_id} because it has {len(entries)} price entries")
+                raise ValidationError(f"Cannot delete product because it has {len(entries)} price entries. Please delete these entries first.")
+            
+            await self.product_repo.delete(product_id, db)
+            
             logger.info(f"Successfully deleted product {product_id}")
             await self.cache_manager.clear_product_related_caches()
             return True

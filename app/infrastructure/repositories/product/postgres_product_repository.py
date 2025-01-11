@@ -10,6 +10,8 @@ from app.infrastructure.database.models.product.category import CategoryModel
 from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse
 import logging
 
+from app.infrastructure.database.models.product.product_entry import ProductEntryModel
+
 logger = logging.getLogger(__name__)
 
 class PostgresProductRepository(ProductRepository):
@@ -192,7 +194,7 @@ class PostgresProductRepository(ProductRepository):
     async def get_by_barcode(self, barcode: str, db: AsyncSession) -> Optional[Product]:
         try:
             result = await db.execute(
-                select(ProductModel).where(ProductModel.barcode.ilike(barcode))
+                select(ProductModel).where(ProductModel.barcode == barcode)
             )
             product = result.scalar_one_or_none()
             if product:
@@ -206,5 +208,15 @@ class PostgresProductRepository(ProductRepository):
                 )
             return None
         except Exception as e:
-            logger.error(f"Error getting product by name: {str(e)}")
-            raise DatabaseError(f"Failed to get product by name: {str(e)}") 
+            logger.error(f"Error getting product by barcode: {str(e)}")
+            raise DatabaseError(f"Failed to get product by barcode: {str(e)}")
+
+    async def get_product_entries(self, product_id: int, db: AsyncSession) -> List[ProductEntryModel]:
+        try:
+            result = await db.execute(
+                select(ProductEntryModel).where(ProductEntryModel.product_id == product_id)
+            )
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting entries for product {product_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get product entries: {str(e)}") 

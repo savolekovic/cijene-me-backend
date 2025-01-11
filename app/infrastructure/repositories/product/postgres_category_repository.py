@@ -72,13 +72,3 @@ class PostgresCategoryRepository(CategoryRepository):
         except Exception as e:
             logger.error(f"Error getting category by name: {str(e)}")
             raise DatabaseError(f"Failed to get category by name: {str(e)}")
-
-    async def get_products_in_category(self, category_id: int, db: AsyncSession) -> List[ProductModel]:
-        try:
-            result = await db.execute(
-                select(ProductModel).where(ProductModel.category_id == category_id)
-            )
-            return result.scalars().all()
-        except Exception as e:
-            logger.error(f"Error getting products in category {category_id}: {str(e)}")
-            raise DatabaseError(f"Failed to get products in category: {str(e)}")
