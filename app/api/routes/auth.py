@@ -73,6 +73,7 @@ router = APIRouter(
         }
     }
 )
+@inject
 async def register(
     user_create: UserCreate,
     db: AsyncSession = Depends(get_db),
@@ -175,6 +176,7 @@ async def login(
         }
     }
 )
+@inject
 async def refresh_token(
     refresh_token: str,
     db: AsyncSession = Depends(get_db),
@@ -210,6 +212,7 @@ async def refresh_token(
         }
     }
 )
+@inject
 async def logout(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
