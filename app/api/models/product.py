@@ -49,9 +49,9 @@ class ProductRequest(BaseModel):
         total = 0
         for i in range(len(digits) - 1):
             if i % 2 == 0:
-                total += digits[i] * 1
-            else:
                 total += digits[i] * 3
+            else:
+                total += digits[i] * 1
                 
         calculated_check = (10 - (total % 10)) % 10
         
