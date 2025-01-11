@@ -54,10 +54,20 @@ class CategoryService:
     async def delete_category(self, category_id: int, db: AsyncSession) -> bool:
         try:
             logger.info(f"Attempting to delete category {category_id}")
-            success = await self.category_repo.delete(category_id, db)
-            if not success:
+            
+            # First check if category exists
+            category = await self.category_repo.get(category_id, db)
+            if not category:
                 logger.warning(f"Category not found: {category_id}")
                 raise NotFoundError("Category", category_id)
+            
+            # Check if there are any products in this category
+            products = await self.category_repo.get_products_in_category(category_id, db)
+            if products:
+                logger.error(f"Cannot delete category {category_id} because it contains {len(products)} products")
+                raise ValidationError(f"Cannot delete category because it contains {len(products)} products. Please move or delete these products first.")
+            
+            success = await self.category_repo.delete(category_id, db)
             logger.info(f"Successfully deleted category {category_id}")
             await self.cache_manager.clear_product_related_caches()
             return True

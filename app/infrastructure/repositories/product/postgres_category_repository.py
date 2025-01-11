@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DatabaseError
 from app.domain.repositories.product.category_repo import CategoryRepository
 from app.domain.models.product.category import Category
-from app.infrastructure.database.models.product import CategoryModel
+from app.infrastructure.database.models.product import CategoryModel, ProductModel
 from typing import List, Optional
 from app.infrastructure.logging.logger import get_logger
 
@@ -72,3 +72,13 @@ class PostgresCategoryRepository(CategoryRepository):
         except Exception as e:
             logger.error(f"Error getting category by name: {str(e)}")
             raise DatabaseError(f"Failed to get category by name: {str(e)}")
+
+    async def get_products_in_category(self, category_id: int, db: AsyncSession) -> List[ProductModel]:
+        try:
+            result = await db.execute(
+                select(ProductModel).where(ProductModel.category_id == category_id)
+            )
+            return result.scalars().all()
+        except Exception as e:
+            logger.error(f"Error getting products in category {category_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get products in category: {str(e)}")
