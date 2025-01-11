@@ -68,6 +68,7 @@ async def create_product(
 ):
     return await product_service.create_product(
         name=product.name,
+        barcode=product.barcode,
         image_url=product.image_url,
         category_id=product.category_id,
         db=db
