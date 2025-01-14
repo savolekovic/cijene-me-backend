@@ -92,3 +92,21 @@ class ProductEntryService:
         except Exception as e:
             logger.error(f"Error fetching price entries for store location {store_location_id}: {str(e)}")
             raise
+
+    async def delete_entry(self, entry_id: int, db: AsyncSession) -> bool:
+        try:
+            logger.info(f"Attempting to delete product entry {entry_id}")
+            
+            # First check if entry exists
+            entry = await self.product_entry_repo.get(entry_id, db)
+            if not entry:
+                logger.warning(f"Product entry not found: {entry_id}")
+                raise NotFoundError("Product entry", entry_id)
+            
+            success = await self.product_entry_repo.delete(entry_id, db)
+            logger.info(f"Successfully deleted product entry {entry_id}")
+            await self.cache_manager.clear_product_related_caches()
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting product entry {entry_id}: {str(e)}")
+            raise

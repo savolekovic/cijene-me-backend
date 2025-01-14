@@ -36,3 +36,7 @@ class ProductEntryRepository(ABC):
     @abstractmethod
     async def get_by_store_location(self, store_location_id: int, db: AsyncSession) -> List[ProductEntry]:
         pass 
+
+    @abstractmethod
+    async def delete(self, entry_id: int, db: AsyncSession) -> bool:
+        pass 

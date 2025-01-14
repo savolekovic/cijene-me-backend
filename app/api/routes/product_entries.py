@@ -165,3 +165,50 @@ async def get_product_entry(
     db: AsyncSession = Depends(get_db)
 ):
      return await product_entry_service.get_entry(entry_id=entry_id, db=db)
+
+@router.delete("/{entry_id}",
+    summary="Delete a product entry",
+    description="Delete an existing product entry. Requires admin or moderator role.",
+    responses={
+        401: {"description": "Unauthorized",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Authorization error",
+                        "message": "Unauthorized to delete a product entry"
+                    }
+                }
+            }},
+        403: {"description": "Forbidden",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Forbidden error",
+                        "message": "Don't have permission to delete a product entry"
+                    }
+                }
+            }},
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Product entry not found"
+                    }
+                }
+            }},
+    },
+    openapi_extra={
+        "security": [{"Bearer": []}],
+        "responses": {"422": None,}
+    }
+)
+@inject
+async def delete_product_entry(
+    entry_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_privileged_user),
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+):
+    await product_entry_service.delete_entry(entry_id, db)
+    return {"message": "Product entry deleted successfully"}

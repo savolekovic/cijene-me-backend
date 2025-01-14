@@ -149,3 +149,20 @@ class PostgresProductEntryRepository(ProductEntryRepository):
         except Exception as e:
             logger.error(f"Error getting product entries with details: {str(e)}")
             raise DatabaseError(f"Failed to get product entries: {str(e)}")
+
+    async def delete(self, entry_id: int, db: AsyncSession) -> bool:
+        try:
+            result = await db.execute(
+                select(ProductEntryModel).where(ProductEntryModel.id == entry_id)
+            )
+            entry = result.scalar_one_or_none()
+            if entry:
+                await db.delete(entry)
+                await db.flush()
+                await db.commit()
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Error deleting product entry: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to delete product entry: {str(e)}")
