@@ -31,4 +31,14 @@ class UserLogin(BaseModel):
                 "email": "user@example.com",
                 "password": "StrongP@ss123"
             }
+        }
+
+class RefreshToken(BaseModel):
+    refresh_token: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            }
         } 

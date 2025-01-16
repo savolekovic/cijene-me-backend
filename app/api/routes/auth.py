@@ -5,7 +5,7 @@ from app.api.responses.auth import UserResponse
 from app.core.container import Container
 from app.core.exceptions import DatabaseError, ValidationError
 from app.domain.models.auth import User, Token
-from app.api.models.auth import UserCreate, UserLogin
+from app.api.models.auth import UserCreate, UserLogin, RefreshToken
 from app.infrastructure.database.database import get_db
 from app.infrastructure.repositories.auth.postgres_user_repository import PostgresUserRepository
 from app.services.auth_service import AuthService
@@ -178,12 +178,12 @@ async def login(
 )
 @inject
 async def refresh_token(
-    refresh_token: str,
+    refresh_data: RefreshToken,
     db: AsyncSession = Depends(get_db),
     auth_service: AuthService = Depends(Provide[Container.auth_service])
 ):
     try:
-        tokens = await auth_service.refresh_tokens(refresh_token, db)  # Pass db session
+        tokens = await auth_service.refresh_tokens(refresh_data.refresh_token, db)  # Pass db session
         if not tokens:
             raise HTTPException(
                 status_code=401,
