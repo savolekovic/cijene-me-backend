@@ -77,10 +77,10 @@ class AuthService:
 
     def create_access_token(self, user_id: int, role: UserRole) -> str:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        expire = get_current_time() + int(expires_delta.total_seconds())
+        expire = datetime.utcnow() + expires_delta
         to_encode = {
             "sub": str(user_id),
-            "exp": expire,
+            "exp": int(expire.timestamp()),
             "token_type": "access",
             "role": role.value
         }
