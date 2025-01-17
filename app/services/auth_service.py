@@ -7,6 +7,7 @@ from app.domain.repositories.auth.user_repo import UserRepository
 from app.infrastructure.database.database import get_current_time
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import AuthenticationError
+from app.core.config import settings
 import os
 from dotenv import load_dotenv
 import re
@@ -17,12 +18,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 load_dotenv()
 logger = get_logger(__name__)
 
-# Configuration from environment variables with defaults
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
-REFRESH_SECRET_KEY = os.getenv("JWT_REFRESH_SECRET_KEY", "your-refresh-secret-key")
+# Use settings from config.py
+SECRET_KEY = settings.JWT_SECRET_KEY
+REFRESH_SECRET_KEY = settings.JWT_REFRESH_SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS = settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
