@@ -24,32 +24,24 @@ async def get_current_user(
     return user
 
 async def get_current_admin(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
 ) -> User:
-    repository = PostgresUserRepository(db)
-    auth_service = AuthService(repository)
-    user = await auth_service.get_admin_user(token, db)
-    if not user:
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=403,
             detail="Admin privileges required",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return user
+    return current_user
 
 async def get_current_privileged_user(
-    token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
 ) -> User:
     """Check if user is either ADMIN or MODERATOR"""
-    repository = PostgresUserRepository(db)
-    auth_service = AuthService(repository)
-    user = await auth_service.get_current_user(token, db)
-    if not user or user.role == UserRole.USER:
+    if current_user.role == UserRole.USER:
         raise HTTPException(
             status_code=403,
             detail="Insufficient privileges",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return user 
+    return current_user 
