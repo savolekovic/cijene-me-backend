@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import re
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 
 
 load_dotenv()
@@ -98,20 +99,40 @@ class AuthService:
 
     async def get_current_user(self, token: str, db: AsyncSession) -> Optional[User]:
         try:
+            # Decode JWT token
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             token_data = TokenPayload(**payload)
             
-            # Add logging to debug
-            logger.info(f"Token payload: {payload}")
+            # Check if token is expired
+            if datetime.fromtimestamp(token_data.exp) < datetime.now():
+                logger.warning("Token has expired")
+                raise HTTPException(
+                    status_code=401,
+                    detail="Token has expired"
+                )
             
-            if token_data.token_type != "access":
-                return None
+            # Get user from database
+            user = await self.user_repo.get_by_id(int(token_data.sub), db)
+            if not user:
+                logger.warning(f"No user found for sub: {token_data.sub}")
+                raise HTTPException(
+                    status_code=401,
+                    detail="User not found"
+                )
             
-            user_id = int(token_data.sub)
-            return await self.user_repo.get_by_id(user_id, db)
+            return user
+        except JWTError as e:
+            logger.error(f"JWT validation error: {str(e)}")
+            raise HTTPException(
+                status_code=401,
+                detail=f"Invalid token format: {str(e)}"
+            )
         except Exception as e:
-            logger.error(f"Error getting current user: {str(e)}")
-            return None
+            logger.error(f"Unexpected auth error: {str(e)}")
+            raise HTTPException(
+                status_code=401,
+                detail="Authentication failed"
+            )
 
     async def verify_refresh_token(self, refresh_token: str) -> Optional[int]:
         try:
