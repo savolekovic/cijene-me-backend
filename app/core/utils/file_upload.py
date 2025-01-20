@@ -97,7 +97,7 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "products") ->
     async with aiofiles.open(file_path, 'wb') as out_file:
         await out_file.write(compressed_content)
     
-    return os.path.join(folder, filename)
+    return f"/static/products/{filename}"
 
 async def delete_upload_file(file_path: Optional[str]) -> None:
     """

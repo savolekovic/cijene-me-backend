@@ -61,6 +61,9 @@ ALLOWED_ORIGINS: List[str] = [
 # Create upload directory if it doesn't exist
 os.makedirs(settings.STATIC_FILES_DIR, exist_ok=True)
 
+# Create static directories if they don't exist
+os.makedirs(os.path.join(settings.STATIC_FILES_DIR, "products"), exist_ok=True)
+
 app = FastAPI(
     title="Cijene.me API",
     description="""
@@ -126,7 +129,7 @@ app.add_middleware(
 )
 
 # Mount static files directory
-app.mount("/static", StaticFiles(directory=settings.STATIC_FILES_DIR), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Add request logging middleware
 @app.middleware("http")
