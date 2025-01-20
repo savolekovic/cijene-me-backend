@@ -129,7 +129,7 @@ async def register(
             }
         }
     },
-     openapi_extra={
+    openapi_extra={
         "responses": {
             "422": None
         }
@@ -148,20 +148,23 @@ async def login(
                 status_code=401,
                 detail="Incorrect email or password"
             )
-        
+
         access_token = auth_service.create_access_token(user.id, user.role)
         refresh_token = auth_service.create_refresh_token(user.id)
         
         await auth_service.user_repo.update_refresh_token(user.id, refresh_token, db)
         
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer"
-        }
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer"
+        )
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail="An error occurred during login"
+        )
 
 @router.post("/refresh",
     response_model=Token,
