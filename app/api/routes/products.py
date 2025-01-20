@@ -27,58 +27,6 @@ router = APIRouter(
     response_model=Product,
     summary="Create a new product",
     description="Create a new product with image upload. Requires admin or moderator role.",
-    responses={
-        401: {"description": "Unauthorized",
-              "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Authorization error",
-                        "message": "Unauthorized to create a new product"
-                    }
-                }
-            }},
-        403: {"description": "Forbidden",
-              "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Forbidden error",
-                        "message": "Don't have permission to create a new product"
-                    }
-                }
-            }},
-        409: {"description": "Conflict",
-              "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Conflict error",
-                        "message": "Product already exists"
-                    }
-                }
-            }}
-    },
-    openapi_extra={
-        "requestBody": {
-            "content": {
-                "multipart/form-data": {
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string", "example": "Jagodica"},
-                            "barcode": {"type": "string", "example": "12345670"},
-                            "category_id": {"type": "integer", "example": 4},
-                            "image": {
-                                "type": "string",
-                                "format": "binary"
-                            }
-                        },
-                        "required": ["name", "barcode", "category_id", "image"]
-                    }
-                }
-            }
-        },
-        "security": [{"Bearer": []}],
-        "responses": {"422": None,}
-    }
 )
 @inject
 async def create_product(
