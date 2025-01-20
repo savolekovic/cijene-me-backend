@@ -28,9 +28,13 @@ class Settings(BaseSettings):
     CACHE_TIME_MEDIUM: int = 1800  # 30 minutes
     CACHE_TIME_LONG: int = 3600    # 1 hour
 
+    # Static files
+    STATIC_FILES_DIR: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+
     class Config:
         env_file = ".env"
         case_sensitive = True
+        env_file_encoding = "utf-8"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

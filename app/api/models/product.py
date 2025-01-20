@@ -1,11 +1,11 @@
 from pydantic import BaseModel, Field, field_validator
 from app.core.exceptions import ValidationError
+from fastapi import UploadFile
 import re
 
 class ProductRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     barcode: str = Field(..., min_length=8, max_length=13)
-    image_url: str
     category_id: int = Field(..., gt=0)
 
     @field_validator('barcode')
@@ -62,7 +62,6 @@ class ProductRequest(BaseModel):
             "example": {
                 "name": "Jabuka",
                 "barcode": "3856892301234",
-                "image_url": "https://example.com/images/apple.jpg",
                 "category_id": 1
             }
         }

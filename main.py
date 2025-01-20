@@ -1,6 +1,9 @@
 import logging
 import sys
 from typing import List
+from fastapi.staticfiles import StaticFiles
+import os
+from app.core.config import settings
 
 # Configure logging at the top
 logging.getLogger().handlers = []
@@ -50,6 +53,9 @@ ALLOWED_ORIGINS: List[str] = [
     "https://cijene-me-admin.vercel.app",
     "https://cijene-me-admin-*.vercel.app"
 ]
+
+# Create upload directory if it doesn't exist
+os.makedirs(settings.STATIC_FILES_DIR, exist_ok=True)
 
 app = FastAPI(
     title="Cijene.me API",
@@ -114,6 +120,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Accept"],
 )
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory=settings.STATIC_FILES_DIR), name="static")
 
 # Add request logging middleware
 @app.middleware("http")

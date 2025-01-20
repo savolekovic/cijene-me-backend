@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File
 from typing import List
 from app.domain.models.product import Product
 from app.domain.models.auth import User
@@ -13,6 +13,7 @@ from app.core.container import Container
 from app.services.product_service import ProductService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.utils.file_upload import save_upload_file, delete_upload_file
 
 logger = get_logger(__name__)
 
@@ -62,14 +63,18 @@ router = APIRouter(
 @inject
 async def create_product(
     product: ProductRequest,
+    image: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
+    # Save uploaded image
+    image_path = await save_upload_file(image)
+    
     return await product_service.create_product(
         name=product.name,
         barcode=product.barcode,
-        image_url=product.image_url,
+        image_url=image_path,
         category_id=product.category_id,
         db=db
     )
@@ -146,14 +151,26 @@ async def get_product(
 async def update_product(
     product_id: int,
     product: ProductRequest,
+    image: UploadFile | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
+    # Get existing product to handle image update
+    existing_product = await product_service.get_product(product_id, db)
+    
+    # Handle image update
+    image_path = existing_product.image_url
+    if image:
+        # Delete old image if it exists
+        await delete_upload_file(existing_product.image_url)
+        # Save new image
+        image_path = await save_upload_file(image)
+    
     return await product_service.update_product(
         product_id=product_id,
         name=product.name,
-        image_url=product.image_url,
+        image_url=image_path,
         category_id=product.category_id,
         db=db
     )
@@ -202,4 +219,11 @@ async def delete_product(
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
+    # Get product to delete its image
+    product = await product_service.get_product(product_id, db)
+    
+    # Delete the product's image
+    await delete_upload_file(product.image_url)
+    
+    # Delete the product
     await product_service.delete_product(product_id, db)
