@@ -27,13 +27,93 @@ router = APIRouter(
     response_model=Product,
     summary="Create a new product",
     description="Create a new product with image upload. Requires admin or moderator role.",
+    responses={
+        200: {
+            "description": "Successfully created product",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": 1,
+                        "name": "Jagodica",
+                        "barcode": "12345670",
+                        "image_url": "/static/uploads/product_1.jpg",
+                        "category_id": 4,
+                        "created_at": "2024-01-20T12:00:00"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not authenticated"}
+                }
+            }
+        },
+        403: {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Not enough privileges"}
+                }
+            }
+        }
+    },
+    openapi_extra={
+        "security": [{"Bearer": []}],
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "example": "Jagodica"
+                            },
+                            "barcode": {
+                                "type": "string",
+                                "example": "12345670"
+                            },
+                            "category_id": {
+                                "type": "integer",
+                                "example": 4
+                            },
+                            "image": {
+                                "type": "string",
+                                "format": "binary",
+                                "description": "Product image file (JPEG, PNG, or GIF)"
+                            }
+                        },
+                        "required": ["name", "barcode", "category_id", "image"]
+                    }
+                }
+            }
+        }
+    }
 )
 @inject
 async def create_product(
-    name: str = Form(...),
-    barcode: str = Form(...),
-    category_id: int = Form(...),
-    image: UploadFile = File(...),
+    name: str = Form(
+        ...,
+        description="Product name",
+        example="Jagodica"
+    ),
+    barcode: str = Form(
+        ...,
+        description="Product barcode",
+        example="12345670"
+    ),
+    category_id: int = Form(
+        ...,
+        description="Category ID",
+        example=4
+    ),
+    image: UploadFile = File(
+        ...,
+        description="Product image (JPEG, PNG, or GIF)"
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
