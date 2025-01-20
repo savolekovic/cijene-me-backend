@@ -62,15 +62,12 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "products") ->
     if not upload_file.content_type in ALLOWED_IMAGE_TYPES:
         raise ValidationError(f"File type not allowed. Allowed types: {', '.join(ALLOWED_IMAGE_TYPES)}")
     
-    # Read and check file size
     content = await upload_file.read()
     if len(content) > MAX_IMAGE_SIZE:
         raise ValidationError(f"File too large. Maximum size: {MAX_IMAGE_SIZE/1024/1024}MB")
     
-    # Compress image
     compressed_content = compress_image(content, upload_file.content_type)
     
-    # Configure cloudinary
     cloudinary.config(
         cloud_name=settings.CLOUDINARY_CLOUD_NAME,
         api_key=settings.CLOUDINARY_API_KEY,
@@ -78,7 +75,6 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "products") ->
     )
     
     try:
-        # Upload to cloudinary
         result = cloudinary.uploader.upload(
             compressed_content,
             folder=folder,
