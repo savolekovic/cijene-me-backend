@@ -2,13 +2,12 @@ from datetime import datetime, timedelta
 from typing import Optional, Tuple
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from app.domain.models.auth import User, Token, TokenPayload, UserRole
+from app.domain.models.auth import User, TokenPayload, UserRole
 from app.domain.repositories.auth.user_repo import UserRepository
 from app.infrastructure.database.database import get_current_time
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import AuthenticationError
 from app.core.config import settings
-import os
 from dotenv import load_dotenv
 import re
 import logging

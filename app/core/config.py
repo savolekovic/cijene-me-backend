@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # JWT Settings - make them Optional with None default
     JWT_SECRET_KEY: Optional[str] = None
     JWT_REFRESH_SECRET_KEY: Optional[str] = None
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # Cache settings
