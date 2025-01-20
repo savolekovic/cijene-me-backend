@@ -4,6 +4,9 @@ from typing import List
 from fastapi.staticfiles import StaticFiles
 import os
 from app.core.config import settings
+from sqlalchemy.exc import DBAPIError, InterfaceError
+from app.infrastructure.database.database import AsyncSessionLocal, engine
+from sqlalchemy import text
 
 # Configure logging at the top
 logging.getLogger().handlers = []
@@ -44,6 +47,7 @@ from app.core.exceptions import DatabaseError, NotFoundError, ValidationError, A
 from app.infrastructure.logging.logger import get_logger
 from app.services.cache_service import init_cache
 from app.core.container import Container
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 logger = get_logger(__name__)
 
@@ -217,6 +221,28 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
+@app.exception_handler(DBAPIError)
+async def database_exception_handler(request: Request, exc: DBAPIError):
+    logger.error(f"Database error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Database error",
+            "message": "A database error occurred. Please try again."
+        }
+    )
+
+@app.exception_handler(InterfaceError)
+async def interface_exception_handler(request: Request, exc: InterfaceError):
+    logger.error(f"Database interface error: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Database connection error",
+            "message": "Database connection failed. Please try again."
+        }
+    )
+
 # Root redirect
 @app.get("/", response_class=RedirectResponse, status_code=302, include_in_schema=False)
 async def root():
@@ -289,6 +315,18 @@ async def handle_500_errors(request: Request, call_next):
 @app.on_event("startup")
 async def startup():
     await init_cache()
+    # Test database connection
+    async with AsyncSessionLocal() as session:
+        try:
+            await session.execute(text("SELECT 1"))
+            logger.info("Database connection successful")
+        except Exception as e:
+            logger.error(f"Database connection failed: {e}")
+            raise
+
+@app.on_event("shutdown")
+async def shutdown():
+    await engine.dispose()
 
 # Create container
 container = Container()

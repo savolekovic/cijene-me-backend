@@ -1,5 +1,4 @@
 from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
@@ -7,6 +6,8 @@ import logging
 import os
 from urllib.parse import quote_plus
 import ssl
+from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -60,7 +61,11 @@ if ENV == 'production':
     engine = create_async_engine(
         DATABASE_URL,
         echo=True,
-        connect_args={"ssl": ssl_context}
+        connect_args={"ssl": ssl_context},
+        pool_pre_ping=True,  # Enable connection health checks
+        pool_recycle=3600,   # Recycle connections after 1 hour
+        pool_size=5,         # Maximum number of connections in the pool
+        max_overflow=10      # Maximum number of connections that can be created beyond pool_size
     )
 else:
     # Local development database
@@ -72,22 +77,41 @@ else:
     # Create engine without SSL for local development
     engine = create_async_engine(
         DATABASE_URL,
-        echo=False
+        echo=False,
+        pool_pre_ping=True,  # Enable connection health checks
+        pool_recycle=3600,   # Recycle connections after 1 hour
+        pool_size=5,         # Maximum number of connections in the pool
+        max_overflow=10      # Maximum number of connections that can be created beyond pool_size
     )
 
 logger.info(f"Using database for environment: {ENV}")
 
-# Create async session maker
+# Create session factory
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False
 )
 
-# Dependency for FastAPI
+@asynccontextmanager
 async def get_db():
-    async with AsyncSessionLocal() as session:
+    """Async context manager for database sessions with retry logic"""
+    session = AsyncSessionLocal()
+    try:
+        # Test the connection
         try:
-            yield session
-        finally:
+            await session.execute(text("SELECT 1"))
+        except Exception as e:
+            logger.warning(f"Initial connection failed, attempting to reconnect: {e}")
             await session.close()
+            session = AsyncSessionLocal()
+        
+        yield session
+    except Exception as e:
+        logger.error(f"Database session error: {e}")
+        await session.rollback()
+        raise
+    finally:
+        await session.close()

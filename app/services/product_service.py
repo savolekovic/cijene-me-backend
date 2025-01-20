@@ -1,5 +1,6 @@
 from app.domain.repositories.product.product_repo import ProductRepository
 from app.domain.repositories.product.category_repo import CategoryRepository
+from app.infrastructure.database.database import AsyncSessionLocal
 from app.services.cache_service import CacheManager
 from app.domain.models.product import Product, ProductWithCategory
 from app.infrastructure.logging.logger import get_logger
@@ -7,6 +8,8 @@ from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.responses.product import ProductWithCategoryResponse
+from sqlalchemy.exc import DBAPIError, InterfaceError
+import asyncio
 
 logger = get_logger(__name__)
 
@@ -47,12 +50,25 @@ class ProductService:
             raise
 
     async def get_all_products(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
-        try:
-            logger.info("Fetching all products with categories")
-            return await self.product_repo.get_all(db)
-        except Exception as e:
-            logger.error(f"Error fetching products with categories: {str(e)}")
-            raise
+        max_retries = 3
+        retry_delay = 1  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info("Fetching all products with categories")
+                return await self.product_repo.get_all(db)
+            except (DBAPIError, InterfaceError) as e:
+                if attempt == max_retries - 1:
+                    logger.error(f"Failed to fetch products after {max_retries} attempts: {e}")
+                    raise
+                logger.warning(f"Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                await asyncio.sleep(retry_delay)
+                # Create new session if needed
+                if not db.is_active:
+                    db = AsyncSessionLocal()
+            except Exception as e:
+                logger.error(f"Error getting all products: {str(e)}")
+                raise
 
     async def get_product(self, product_id: int, db: AsyncSession) -> ProductWithCategoryResponse:
         try:
