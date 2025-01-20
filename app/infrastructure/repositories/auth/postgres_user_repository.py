@@ -38,20 +38,16 @@ class PostgresUserRepository(UserRepository):
         return None
 
     async def get_by_email(self, email: str, db: AsyncSession) -> Optional[User]:
-        query = select(UserModel).where(UserModel.email == email)
-        result = await db.execute(query)
-        db_user = result.scalar_one_or_none()
-        
-        if db_user:
-            return User(
-                id=db_user.id,
-                email=db_user.email,
-                full_name=db_user.full_name,
-                hashed_password=db_user.hashed_password,
-                role=db_user.role,
-                created_at=db_user.created_at
+        try:
+            # Use the session directly
+            result = await db.execute(
+                select(UserModel).where(UserModel.email == email)
             )
-        return None
+            user = result.scalar_one_or_none()
+            return user if user else None
+        except Exception as e:
+            logger.error(f"Error getting user by email: {str(e)}")
+            raise
 
     async def get_by_id(self, user_id: int, db: AsyncSession) -> Optional[User]:
         query = select(UserModel).where(UserModel.id == user_id)

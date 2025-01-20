@@ -6,7 +6,6 @@ import logging
 import os
 from urllib.parse import quote_plus
 import ssl
-from contextlib import asynccontextmanager
 from sqlalchemy import text
 
 # Set up logging
@@ -95,23 +94,10 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False
 )
 
-@asynccontextmanager
 async def get_db():
-    """Async context manager for database sessions with retry logic"""
+    """Get database session"""
     session = AsyncSessionLocal()
     try:
-        # Test the connection
-        try:
-            await session.execute(text("SELECT 1"))
-        except Exception as e:
-            logger.warning(f"Initial connection failed, attempting to reconnect: {e}")
-            await session.close()
-            session = AsyncSessionLocal()
-        
         yield session
-    except Exception as e:
-        logger.error(f"Database session error: {e}")
-        await session.rollback()
-        raise
     finally:
         await session.close()
