@@ -7,6 +7,11 @@ from app.core.exceptions import ValidationError
 from typing import Optional
 from PIL import Image
 import io
+import cloudinary
+import cloudinary.uploader
+from app.infrastructure.logging.logger import get_logger
+
+logger = get_logger(__name__)
 
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"]
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -53,23 +58,11 @@ def compress_image(image_data: bytes, content_type: str) -> bytes:
     return output.getvalue()
 
 async def save_upload_file(upload_file: UploadFile, folder: str = "products") -> str:
-    """
-    Save an uploaded file to the specified folder and return the file path.
-    
-    Args:
-        upload_file (UploadFile): The uploaded file
-        folder (str): The subfolder to save the file in (default: "products")
-        
-    Returns:
-        str: The relative path to the saved file
-        
-    Raises:
-        ValidationError: If the file type is not allowed or file is too large
-    """
+    """Save file to Cloudinary and return the URL"""
     if not upload_file.content_type in ALLOWED_IMAGE_TYPES:
         raise ValidationError(f"File type not allowed. Allowed types: {', '.join(ALLOWED_IMAGE_TYPES)}")
     
-    # Read file content to check size
+    # Read and check file size
     content = await upload_file.read()
     if len(content) > MAX_IMAGE_SIZE:
         raise ValidationError(f"File too large. Maximum size: {MAX_IMAGE_SIZE/1024/1024}MB")
@@ -77,38 +70,43 @@ async def save_upload_file(upload_file: UploadFile, folder: str = "products") ->
     # Compress image
     compressed_content = compress_image(content, upload_file.content_type)
     
-    # Create upload directory if it doesn't exist
-    upload_dir = os.path.join(settings.STATIC_FILES_DIR, folder)
-    os.makedirs(upload_dir, exist_ok=True)
+    # Configure cloudinary
+    cloudinary.config(
+        cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+        api_key=settings.CLOUDINARY_API_KEY,
+        api_secret=settings.CLOUDINARY_API_SECRET
+    )
     
-    # Generate unique filename
-    file_extension = os.path.splitext(upload_file.filename)[1].lower()
-    if not file_extension:
-        file_extension = {
-            "image/jpeg": ".jpg",
-            "image/png": ".png",
-            "image/gif": ".gif"
-        }[upload_file.content_type]
-    
-    filename = f"{uuid4()}{file_extension}"
-    file_path = os.path.join(upload_dir, filename)
-    
-    # Save file
-    async with aiofiles.open(file_path, 'wb') as out_file:
-        await out_file.write(compressed_content)
-    
-    return f"/static/products/{filename}"
+    try:
+        # Upload to cloudinary
+        result = cloudinary.uploader.upload(
+            compressed_content,
+            folder=folder,
+            resource_type="auto"
+        )
+        return result['secure_url']
+    except Exception as e:
+        raise ValidationError(f"Failed to upload image: {str(e)}")
 
 async def delete_upload_file(file_path: Optional[str]) -> None:
-    """
-    Delete an uploaded file.
-    
-    Args:
-        file_path (Optional[str]): The relative path to the file to delete
-    """
+    """Delete file from Cloudinary"""
     if not file_path:
         return
         
-    full_path = os.path.join(settings.STATIC_FILES_DIR, file_path)
-    if os.path.exists(full_path):
-        os.remove(full_path) 
+    try:
+        # Extract public_id from URL
+        if "cloudinary.com" in file_path:
+            # URL format: https://res.cloudinary.com/cloud_name/image/upload/v1234/folder/filename.jpg
+            parts = file_path.split("/upload/")
+            if len(parts) > 1:
+                public_id = parts[1].split("/", 1)[1].rsplit(".", 1)[0]
+                
+                cloudinary.config(
+                    cloud_name=settings.CLOUDINARY_CLOUD_NAME,
+                    api_key=settings.CLOUDINARY_API_KEY,
+                    api_secret=settings.CLOUDINARY_API_SECRET
+                )
+                
+                cloudinary.uploader.destroy(public_id)
+    except Exception as e:
+        logger.error(f"Failed to delete image from Cloudinary: {str(e)}") 

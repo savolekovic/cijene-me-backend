@@ -20,6 +20,12 @@ services:
           type: redis
           name: cijene-me-redis
           property: connectionString
+      - key: CLOUDINARY_CLOUD_NAME
+        value: your_cloud_name
+      - key: CLOUDINARY_API_KEY
+        value: your_api_key
+      - key: CLOUDINARY_API_SECRET
+        value: your_api_secret
 
   - type: redis
     name: cijene-me-redis

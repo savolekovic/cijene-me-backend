@@ -28,8 +28,10 @@ class Settings(BaseSettings):
     CACHE_TIME_MEDIUM: int = 1800  # 30 minutes
     CACHE_TIME_LONG: int = 3600    # 1 hour
 
-    # Static files
-    STATIC_FILES_DIR: str = "static"  # Simple local directory
+    # Cloudinary settings
+    CLOUDINARY_CLOUD_NAME: str
+    CLOUDINARY_API_KEY: str
+    CLOUDINARY_API_SECRET: str
 
     class Config:
         env_file = ".env"
