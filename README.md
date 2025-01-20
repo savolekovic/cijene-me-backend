@@ -60,7 +60,7 @@ uvicorn main:app --reload
 2. Type `deactivate` to exit virtual environment
 
 ## Project Structure
-fastapi-tutorial/
+cijene-me-backend/
 ├── app/
 │ ├── api/ # API routes
 │ ├── domain/ # Domain models
