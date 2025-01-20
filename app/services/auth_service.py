@@ -99,9 +99,15 @@ class AuthService:
 
     async def get_current_user(self, token: str, db: AsyncSession) -> Optional[User]:
         try:
+            # Add logging
+            logger.info(f"Validating token: {token[:20]}...")
+            
             # Decode JWT token
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             token_data = TokenPayload(**payload)
+            
+            # Log decoded data
+            logger.info(f"Token payload: sub={token_data.sub}, role={token_data.role}")
             
             # Check if token is expired
             if datetime.fromtimestamp(token_data.exp) < datetime.now():
