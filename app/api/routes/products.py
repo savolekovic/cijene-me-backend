@@ -14,6 +14,7 @@ from app.services.product_service import ProductService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils.file_upload import save_upload_file, delete_upload_file
+from fastapi.openapi.models import MediaType
 
 logger = get_logger(__name__)
 
@@ -56,6 +57,25 @@ router = APIRouter(
             }}
     },
     openapi_extra={
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string", "example": "Jagodica"},
+                            "barcode": {"type": "string", "example": "12345670"},
+                            "category_id": {"type": "integer", "example": 4},
+                            "image": {
+                                "type": "string",
+                                "format": "binary"
+                            }
+                        },
+                        "required": ["name", "barcode", "category_id", "image"]
+                    }
+                }
+            }
+        },
         "security": [{"Bearer": []}],
         "responses": {"422": None,}
     }
