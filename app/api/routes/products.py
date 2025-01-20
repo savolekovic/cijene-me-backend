@@ -70,6 +70,13 @@ async def create_product(
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
+    logger.info(f"Received product creation request:")
+    logger.info(f"Name: {name}")
+    logger.info(f"Barcode: {barcode}")
+    logger.info(f"Category ID: {category_id}")
+    logger.info(f"Image filename: {image.filename}")
+    logger.info(f"Headers: {image.headers}")  # This might help identify auth header issues
+    
     # Save uploaded image
     image_path = await save_upload_file(image)
     
