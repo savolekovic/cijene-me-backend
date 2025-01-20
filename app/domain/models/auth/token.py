@@ -1,11 +1,13 @@
-from datetime import datetime
 from pydantic import BaseModel
+from typing import Optional
 
 class Token(BaseModel):
     access_token: str
     refresh_token: str
+    token_type: str = "bearer"
 
 class TokenPayload(BaseModel):
-    sub: int
-    exp: datetime
-    token_type: str 
+    sub: str
+    exp: int
+    token_type: str
+    role: Optional[str] 
