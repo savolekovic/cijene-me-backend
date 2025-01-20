@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 from typing import List
 from app.domain.models.product import Product
 from app.domain.models.auth import User
@@ -25,7 +25,7 @@ router = APIRouter(
 @router.post("/", 
     response_model=Product,
     summary="Create a new product",
-    description="Create a new product. Requires admin or moderator role.",
+    description="Create a new product with image upload. Requires admin or moderator role.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -62,7 +62,9 @@ router = APIRouter(
 )
 @inject
 async def create_product(
-    product: ProductRequest,
+    name: str = Form(...),
+    barcode: str = Form(...),
+    category_id: int = Form(...),
     image: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
@@ -72,10 +74,10 @@ async def create_product(
     image_path = await save_upload_file(image)
     
     return await product_service.create_product(
-        name=product.name,
-        barcode=product.barcode,
+        name=name,
+        barcode=barcode,
         image_url=image_path,
-        category_id=product.category_id,
+        category_id=category_id,
         db=db
     )
 
