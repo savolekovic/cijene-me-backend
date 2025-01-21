@@ -9,4 +9,4 @@ class TokenPayload(BaseModel):
     sub: str
     exp: int
     token_type: str
-    role: Optional[str] 
+    role: Optional[str] = None 
