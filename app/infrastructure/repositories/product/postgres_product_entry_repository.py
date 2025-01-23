@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, asc, desc
+from sqlalchemy import select, desc, func, or_
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
 from decimal import Decimal
@@ -11,8 +11,8 @@ from app.infrastructure.database.models.product.product import ProductModel
 from app.infrastructure.database.models.store.store_brand import StoreBrandModel
 from app.infrastructure.database.models.store.store_location import StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry, ProductWithCategoryResponse
-from app.api.responses.product import CategoryInProduct
+from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry, ProductWithCategoryResponse, PaginatedProductEntryResponse
+from app.api.responses.category import CategoryResponse
 
 logger = get_logger(__name__)
 
@@ -109,8 +109,9 @@ class PostgresProductEntryRepository(ProductEntryRepository):
         product_entry = result.scalar_one_or_none()
         return ProductEntry.model_validate(product_entry) if product_entry else None
 
-    async def get_all(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductEntryResponse:
         try:
+            # Base query for data
             query = (
                 select(ProductEntryModel)
                 .options(
@@ -119,12 +120,45 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                     joinedload(ProductEntryModel.store_location)
                     .joinedload(StoreLocationModel.store_brand)
                 )
-                .order_by(desc(ProductEntryModel.created_at))
             )
+            
+            # Base query for count
+            count_query = select(ProductEntryModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                # Join the necessary tables for search
+                count_query = (
+                    count_query
+                    .join(ProductModel)
+                    .join(StoreLocationModel)
+                    .join(StoreBrandModel)
+                )
+                # Search across product name, store brand name, and store location address
+                search_filter = or_(
+                    ProductModel.name.ilike(search_pattern),
+                    StoreBrandModel.name.ilike(search_pattern),
+                    StoreLocationModel.address.ilike(search_pattern)
+                )
+                query = query.join(ProductEntryModel.product).join(ProductEntryModel.store_location).join(StoreLocationModel.store_brand).where(search_filter)
+                count_query = count_query.where(search_filter)
+            
+            # Get total count
+            count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
+            total_count = count_result.scalar()
+            
+            # Add ordering and pagination to the main query
+            query = query.order_by(desc(ProductEntryModel.created_at))
+            offset = (page - 1) * per_page
+            query = query.offset(offset).limit(per_page)
+            
+            # Get paginated data
             result = await db.execute(query)
             entries = result.unique().scalars().all()
             
-            return [
+            # Convert to response model
+            entry_list = [
                 ProductEntryWithDetails(
                     id=entry.id,
                     price=entry.price,
@@ -134,7 +168,7 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                         name=entry.product.name,
                         barcode=entry.product.barcode,
                         image_url=entry.product.image_url,
-                        category=CategoryInProduct(
+                        category=CategoryResponse(
                             id=entry.product.category.id,
                             name=entry.product.category.name
                         ),
@@ -151,9 +185,14 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 )
                 for entry in entries
             ]
+            
+            return PaginatedProductEntryResponse(
+                total_count=total_count,
+                data=entry_list
+            )
         except Exception as e:
-            logger.error(f"Error getting all product entries: {str(e)}")
-            raise
+            logger.error(f"Error getting product entries: {str(e)}")
+            raise DatabaseError(f"Failed to get product entries: {str(e)}")
 
     async def delete(self, entry_id: int, db: AsyncSession) -> bool:
         try:
