@@ -7,7 +7,7 @@ from app.infrastructure.database.models.product import ProductModel
 from sqlalchemy import asc
 from app.core.exceptions import DatabaseError
 from app.infrastructure.database.models.product.category import CategoryModel
-from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse, PaginatedProductResponse, SimpleProductResponse, PaginatedSimpleProductResponse
+from app.api.responses.product import CategoryInProduct, PaginatedProductResponse, ProductWithCategoryResponse, SimpleProductResponse
 import logging
 from sqlalchemy import func
 
