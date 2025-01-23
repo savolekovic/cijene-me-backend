@@ -5,7 +5,7 @@ from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product import ProductWithCategoryResponse
+from app.api.responses.product import ProductWithCategoryResponse, PaginatedProductResponse
 from app.api.models.product import ProductRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
@@ -136,7 +136,7 @@ async def create_product(
         db=db
     )
 
-@router.get("/", response_model=List[ProductWithCategoryResponse])
+@router.get("/", response_model=PaginatedProductResponse)
 @cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_products(

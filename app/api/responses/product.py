@@ -1,9 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel
+from typing import List
+from app.api.responses.common import PaginatedResponse
 
 class CategoryInProduct(BaseModel):
     id: int
     name: str
+
+    class Config:
+        from_attributes = True
 
 class ProductWithCategoryResponse(BaseModel):
     id: int
@@ -15,3 +20,6 @@ class ProductWithCategoryResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# Use the generic PaginatedResponse with ProductWithCategoryResponse
+PaginatedProductResponse = PaginatedResponse[ProductWithCategoryResponse]

@@ -7,8 +7,9 @@ from app.infrastructure.database.models.product import ProductModel
 from sqlalchemy import asc
 from app.core.exceptions import DatabaseError
 from app.infrastructure.database.models.product.category import CategoryModel
-from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse
+from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse, PaginatedProductResponse
 import logging
+from sqlalchemy import func
 
 from app.infrastructure.database.models.product.product_entry import ProductEntryModel
 
@@ -18,36 +19,45 @@ class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
         pass
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> List[ProductWithCategoryResponse]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductResponse:
         try:
+            # Base query for data
             query = (
                 select(
                     ProductModel,
                     CategoryModel
                 )
                 .join(CategoryModel)
-                .order_by(asc(ProductModel.created_at))
             )
+            
+            # Base query for count
+            count_query = select(ProductModel)
             
             # Add search filter if search query is provided
             if search:
                 search_pattern = f"%{search}%"
-                query = query.where(
+                search_filter = (
                     ProductModel.name.ilike(search_pattern) |
                     ProductModel.barcode.ilike(search_pattern)
                 )
+                query = query.where(search_filter)
+                count_query = count_query.where(search_filter)
             
-            # Add ordering
+            # Get total count
+            count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
+            total_count = count_result.scalar()
+            
+            # Add ordering and pagination to the main query
             query = query.order_by(asc(ProductModel.name))
-            
-            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
+            # Get paginated data
             result = await db.execute(query)
             products = result.all()
             
-            return [
+            # Convert to response model
+            product_list = [
                 ProductWithCategoryResponse(
                     id=product[0].id,
                     name=product[0].name,
@@ -61,6 +71,11 @@ class PostgresProductRepository(ProductRepository):
                 )
                 for product in products
             ]
+            
+            return PaginatedProductResponse(
+                total_count=total_count,
+                data=product_list
+            )
         except Exception as e:
             logger.error(f"Error getting all products: {str(e)}")
             raise DatabaseError(f"Failed to get all products: {str(e)}")
