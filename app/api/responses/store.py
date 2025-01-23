@@ -1,5 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
+from app.api.responses.common import PaginatedResponse
 
 class StoreBrandResponse(BaseModel):
     id: int
@@ -13,6 +14,9 @@ class StoreBrandInLocation(BaseModel):
     id: int
     name: str
 
+    class Config:
+        from_attributes = True
+
 class StoreLocationResponse(BaseModel):
     id: int
     address: str
@@ -20,4 +24,10 @@ class StoreLocationResponse(BaseModel):
     store_brand: StoreBrandInLocation
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+# Use the generic PaginatedResponse with StoreBrandResponse
+PaginatedStoreBrandResponse = PaginatedResponse[StoreBrandResponse]
+
+# Use the generic PaginatedResponse with StoreLocationResponse
+PaginatedStoreLocationResponse = PaginatedResponse[StoreLocationResponse] 

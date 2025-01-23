@@ -23,6 +23,3 @@ class SimpleProductResponse(BaseModel):
 
 # Use the generic PaginatedResponse with ProductWithCategoryResponse
 PaginatedProductResponse = PaginatedResponse[ProductWithCategoryResponse]
-
-# Use the generic PaginatedResponse with CategoryResponse for category listing
-PaginatedCategoryResponse = PaginatedResponse[CategoryResponse]
