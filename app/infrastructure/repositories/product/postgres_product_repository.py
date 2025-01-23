@@ -1,13 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List
+from app.api.responses.category import CategoryResponse
 from app.domain.models.product.product import Product
 from app.domain.repositories.product.product_repo import ProductRepository
 from app.infrastructure.database.models.product import ProductModel
 from sqlalchemy import asc
 from app.core.exceptions import DatabaseError
 from app.infrastructure.database.models.product.category import CategoryModel
-from app.api.responses.product import CategoryInProduct, PaginatedProductResponse, ProductWithCategoryResponse, SimpleProductResponse
+from app.api.responses.product import PaginatedProductResponse, ProductWithCategoryResponse, SimpleProductResponse
 import logging
 from sqlalchemy import func
 
@@ -64,7 +65,7 @@ class PostgresProductRepository(ProductRepository):
                     barcode=product[0].barcode,
                     image_url=product[0].image_url,
                     created_at=product[0].created_at,
-                    category=CategoryInProduct(
+                    category=CategoryResponse(
                         id=product[1].id,
                         name=product[1].name
                     )
@@ -125,7 +126,7 @@ class PostgresProductRepository(ProductRepository):
                     barcode=product[0].barcode,
                     image_url=product[0].image_url,
                     created_at=product[0].created_at,
-                    category=CategoryInProduct(
+                    category=CategoryResponse(
                         id=product[1].id,
                         name=product[1].name
                     )
