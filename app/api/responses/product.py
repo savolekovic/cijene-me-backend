@@ -1,6 +1,5 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import List
 from app.api.responses.common import PaginatedResponse
 from app.api.responses.category import CategoryResponse
 
