@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.domain.models.store.store_brand import StoreBrand
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.domain.models.store.store_brand import StoreBrand
 from app.infrastructure.database.models.store.store_location import StoreLocationModel
+from app.api.responses.store import PaginatedStoreBrandResponse
 
 
 class StoreBrandRepository(ABC):
@@ -15,7 +16,8 @@ class StoreBrandRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession) -> List[StoreBrand]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreBrandResponse:
+        """Get a paginated list of all store brands with optional search."""
         pass
     
     @abstractmethod
@@ -24,6 +26,10 @@ class StoreBrandRepository(ABC):
     
     @abstractmethod
     async def delete(self, store_brand_id: int, db: AsyncSession) -> bool:
+        pass
+
+    @abstractmethod
+    async def get_by_name(self, name: str, db: AsyncSession) -> Optional[StoreBrand]:
         pass
 
     @abstractmethod

@@ -1,17 +1,18 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import asc, select
+from sqlalchemy import asc, select, func
 from typing import List, Optional
 from app.domain.models.store.store_brand import StoreBrand
 from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
+from app.api.responses.store import StoreBrandResponse, PaginatedStoreBrandResponse
 
 logger = get_logger(__name__)
 
 class PostgresStoreBrandRepository(StoreBrandRepository):
     def __init__(self, session: AsyncSession = None):
-        pass
+        self.session = session
 
     async def create(self, name: str, db: AsyncSession) -> StoreBrand:
         try:
@@ -102,22 +103,50 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             await db.rollback()
             raise DatabaseError(f"Failed to delete store brand: {str(e)}")
 
-    async def get_all(self, db: AsyncSession) -> List[StoreBrand]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreBrandResponse:
         try:
-            result = await db.execute(
-                select(StoreBrandModel).order_by(asc(StoreBrandModel.name))
-            )
+            # Base query for data
+            query = select(StoreBrandModel)
+            
+            # Base query for count
+            count_query = select(StoreBrandModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                search_filter = StoreBrandModel.name.ilike(search_pattern)
+                query = query.where(search_filter)
+                count_query = count_query.where(search_filter)
+            
+            # Get total count
+            count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
+            total_count = count_result.scalar()
+            
+            # Add ordering and pagination to the main query
+            query = query.order_by(asc(StoreBrandModel.name))
+            offset = (page - 1) * per_page
+            query = query.offset(offset).limit(per_page)
+            
+            # Get paginated data
+            result = await db.execute(query)
             brands = result.scalars().all()
-            return [
-                StoreBrand(
+            
+            # Convert to response model
+            brand_list = [
+                StoreBrandResponse(
                     id=brand.id,
                     name=brand.name,
                     created_at=brand.created_at
-                ) 
+                )
                 for brand in brands
             ]
+            
+            return PaginatedStoreBrandResponse(
+                total_count=total_count,
+                data=brand_list
+            )
         except Exception as e:
-            logger.error(f"Error getting all store brands: {str(e)}")
+            logger.error(f"Error getting store brands: {str(e)}")
             raise DatabaseError(f"Failed to get store brands: {str(e)}")
 
     async def get_locations_for_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocationModel]:
