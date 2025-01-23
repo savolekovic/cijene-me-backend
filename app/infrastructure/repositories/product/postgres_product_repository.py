@@ -67,7 +67,8 @@ class PostgresProductRepository(ProductRepository):
                     created_at=product[0].created_at,
                     category=CategoryResponse(
                         id=product[1].id,
-                        name=product[1].name
+                        name=product[1].name,
+                        created_at=product[1].created_at
                     )
                 )
                 for product in products
@@ -128,7 +129,8 @@ class PostgresProductRepository(ProductRepository):
                     created_at=product[0].created_at,
                     category=CategoryResponse(
                         id=product[1].id,
-                        name=product[1].name
+                        name=product[1].name,
+                        created_at=product[1].created_at
                     )
                 )
             return None
