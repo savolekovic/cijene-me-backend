@@ -11,8 +11,13 @@ from app.infrastructure.database.models.product.product import ProductModel
 from app.infrastructure.database.models.store.store_brand import StoreBrandModel
 from app.infrastructure.database.models.store.store_location import StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry, ProductWithCategoryResponse, PaginatedProductEntryResponse
-from app.api.responses.category import CategoryResponse
+from app.api.responses.product_entry import (
+    ProductEntryWithDetails,
+    ProductInEntry,
+    StoreBrandInEntry,
+    StoreLocationInEntry,
+    PaginatedProductEntryResponse
+)
 
 logger = get_logger(__name__)
 
@@ -160,8 +165,8 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             # Convert to response model
             entry_list = []
             for entry in entries:
-                if not entry.product or not entry.product.category:
-                    logger.error(f"Product entry {entry.id} has invalid product or category data")
+                if not entry.product:
+                    logger.error(f"Product entry {entry.id} has invalid product data")
                     continue
                 
                 entry_list.append(
