@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, asc
+from sqlalchemy import select, asc, func, or_
 from typing import List, Optional
 from app.core.exceptions import DatabaseError
 from app.domain.models.store.store_location import StoreLocation
@@ -7,7 +7,7 @@ from app.domain.repositories.store.store_location_repo import StoreLocationRepos
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.infrastructure.database.models.product import ProductEntryModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.store import StoreBrandInLocation, StoreLocationResponse
+from app.api.responses.store import StoreBrandInLocation, StoreLocationResponse, PaginatedStoreLocationResponse
 
 logger = get_logger(__name__)
 
@@ -34,7 +34,6 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             )
             db.add(db_store_location)
             await db.flush()
-            await db.commit()
 
             # Load store brand details
             query = (
@@ -91,20 +90,45 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             logger.error(f"Error getting store location: {str(e)}")
             raise DatabaseError(f"Failed to get store location: {str(e)}")
 
-    async def get_all(self, db: AsyncSession) -> List[StoreLocationResponse]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreLocationResponse:
         try:
+            # Base query for data
             query = (
                 select(
                     StoreLocationModel,
                     StoreBrandModel
                 )
                 .join(StoreBrandModel)
-                .order_by(asc(StoreLocationModel.id))
             )
+            
+            # Base query for count
+            count_query = select(StoreLocationModel).join(StoreBrandModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                search_filter = or_(
+                    StoreLocationModel.address.ilike(search_pattern),
+                    StoreBrandModel.name.ilike(search_pattern)
+                )
+                query = query.where(search_filter)
+                count_query = count_query.where(search_filter)
+            
+            # Get total count
+            count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
+            total_count = count_result.scalar()
+            
+            # Add ordering and pagination to the main query
+            query = query.order_by(asc(StoreLocationModel.address))
+            offset = (page - 1) * per_page
+            query = query.offset(offset).limit(per_page)
+            
+            # Get paginated data
             result = await db.execute(query)
             locations = result.all()
             
-            return [
+            # Convert to response model
+            location_list = [
                 StoreLocationResponse(
                     id=location[0].id,
                     address=location[0].address,
@@ -116,6 +140,11 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
                 )
                 for location in locations
             ]
+            
+            return PaginatedStoreLocationResponse(
+                total_count=total_count,
+                data=location_list
+            )
         except Exception as e:
             logger.error(f"Error getting store locations: {str(e)}")
             raise DatabaseError(f"Failed to get store locations: {str(e)}")
