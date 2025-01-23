@@ -154,7 +154,10 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             result = await db.execute(
                 select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
             )
-            return result.scalars().all()
+            locations = result.scalars().all()
+            if not locations:
+                logger.warning(f"No locations found for store brand {store_brand_id}")
+            return locations
         except Exception as e:
             logger.error(f"Error getting locations for store brand {store_brand_id}: {str(e)}")
             raise DatabaseError(f"Failed to get locations for store brand: {str(e)}") 

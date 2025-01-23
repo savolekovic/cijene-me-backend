@@ -223,7 +223,10 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             result = await db.execute(
                 select(ProductEntryModel).where(ProductEntryModel.store_location_id == location_id)
             )
-            return result.scalars().all()
+            entries = result.scalars().all()
+            if not entries:
+                logger.warning(f"No product entries found for location {location_id}")
+            return entries
         except Exception as e:
             logger.error(f"Error getting product entries for location {location_id}: {str(e)}")
             raise DatabaseError(f"Failed to get product entries for location: {str(e)}")

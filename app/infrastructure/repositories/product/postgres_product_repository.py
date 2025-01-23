@@ -178,7 +178,7 @@ class PostgresProductRepository(ProductRepository):
                 return True
             return False
         except Exception as e:
-            logger.error(f"Error deleting product: {str(e)}")
+            logger.error(f"Error deleting product {product_id}: {str(e)}")
             await db.rollback()
             raise DatabaseError(f"Failed to delete product: {str(e)}")
 
@@ -249,7 +249,10 @@ class PostgresProductRepository(ProductRepository):
             result = await db.execute(
                 select(ProductEntryModel).where(ProductEntryModel.product_id == product_id)
             )
-            return result.scalars().all()
+            entries = result.scalars().all()
+            if not entries:
+                logger.warning(f"No entries found for product {product_id}")
+            return entries
         except Exception as e:
             logger.error(f"Error getting entries for product {product_id}: {str(e)}")
             raise DatabaseError(f"Failed to get product entries: {str(e)}")

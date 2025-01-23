@@ -116,7 +116,7 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 select(ProductEntryModel)
                 .options(
                     joinedload(ProductEntryModel.product)
-                    .joinedload(ProductModel.category),
+                    .joinedload(ProductModel.category, innerjoin=True),
                     joinedload(ProductEntryModel.store_location)
                     .joinedload(StoreLocationModel.store_brand)
                 )
@@ -158,33 +158,39 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             entries = result.unique().scalars().all()
             
             # Convert to response model
-            entry_list = [
-                ProductEntryWithDetails(
-                    id=entry.id,
-                    price=entry.price,
-                    created_at=entry.created_at,
-                    product=ProductWithCategoryResponse(
-                        id=entry.product.id,
-                        name=entry.product.name,
-                        barcode=entry.product.barcode,
-                        image_url=entry.product.image_url,
-                        category=CategoryResponse(
-                            id=entry.product.category.id,
-                            name=entry.product.category.name
+            entry_list = []
+            for entry in entries:
+                if not entry.product or not entry.product.category:
+                    logger.error(f"Product entry {entry.id} has invalid product or category data")
+                    continue
+                
+                entry_list.append(
+                    ProductEntryWithDetails(
+                        id=entry.id,
+                        price=entry.price,
+                        created_at=entry.created_at,
+                        product=ProductWithCategoryResponse(
+                            id=entry.product.id,
+                            name=entry.product.name,
+                            barcode=entry.product.barcode,
+                            image_url=entry.product.image_url,
+                            category=CategoryResponse(
+                                id=entry.product.category.id,
+                                name=entry.product.category.name,
+                                created_at=entry.product.category.created_at
+                            ),
+                            created_at=entry.product.created_at
                         ),
-                        created_at=entry.product.created_at
-                    ),
-                    store_location=StoreLocationInEntry(
-                        id=entry.store_location.id,
-                        address=entry.store_location.address,
-                        store_brand=StoreBrandInEntry(
-                            id=entry.store_location.store_brand.id,
-                            name=entry.store_location.store_brand.name
+                        store_location=StoreLocationInEntry(
+                            id=entry.store_location.id,
+                            address=entry.store_location.address,
+                            store_brand=StoreBrandInEntry(
+                                id=entry.store_location.store_brand.id,
+                                name=entry.store_location.store_brand.name
+                            )
                         )
                     )
                 )
-                for entry in entries
-            ]
             
             return PaginatedProductEntryResponse(
                 total_count=total_count,
