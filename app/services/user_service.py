@@ -5,6 +5,7 @@ from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.responses.auth import PaginatedUserResponse
 
 logger = get_logger(__name__)
 
@@ -13,12 +14,10 @@ class UserService:
         self.user_repo = user_repo
         self.cache_manager = cache_manager
 
-    async def get_all_users(self, db: AsyncSession) -> List[User]:
+    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedUserResponse:
         try:
-            logger.info("Fetching all non-admin users")
-            users = await self.user_repo.get_all_users(db)
-            logger.info(f"Retrieved {len(users)} non-admin users")
-            return users
+            logger.info(f"Fetching users with pagination (page={page}, per_page={per_page}) and search='{search}'")
+            return await self.user_repo.get_all_users(db, page=page, per_page=per_page, search=search)
         except Exception as e:
             logger.error(f"Error fetching users: {str(e)}")
             raise

@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List
 from app.domain.models.auth import User, UserRole
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.responses.auth import PaginatedUserResponse
 
 class UserRepository(ABC):
     @abstractmethod
@@ -21,7 +22,8 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_all_users(self, db: AsyncSession) -> List[User]:
+    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedUserResponse:
+        """Get a paginated list of all non-admin users with optional search."""
         pass
 
     @abstractmethod

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
-from app.api.responses.auth import UserResponse
+from app.api.responses.auth import UserResponse, PaginatedUserResponse
 from app.domain.models.auth import User, UserRole
 from app.api.dependencies.auth import get_current_user, get_current_admin
 from app.infrastructure.database.database import get_db
@@ -60,9 +60,9 @@ async def read_users_me(
     return current_user
 
 @router.get("/", 
-    response_model=List[UserResponse],
+    response_model=PaginatedUserResponse,
     summary="Get all non-admin users",
-    description="Get list of all non-admin users. Requires admin privileges.",
+    description="Get list of all non-admin users with pagination and search. Requires admin privileges.",
     responses={
         401: {"description": "Unauthorized",
               "content": {
@@ -93,11 +93,14 @@ async def read_users_me(
 @cache(expire=settings.CACHE_TIME_MEDIUM)
 @inject
 async def get_all_users(
+    page: int = 1,
+    per_page: int = 10,
+    search: str = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_admin),
     user_service: UserService = Depends(Provide[Container.user_service])
 ):
-    return await user_service.get_all_users(db)
+    return await user_service.get_all_users(db, page=page, per_page=per_page, search=search)
 
 @router.put("/{user_id}/role", 
     response_model=UserResponse,
