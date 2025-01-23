@@ -148,6 +148,19 @@ async def get_all_products(
 ):
     return await product_service.get_all_products(db, page=page, per_page=per_page, search=search)
 
+@router.get("/simple", response_model=List[SimpleProductResponse],
+    summary="Get simplified products list",
+    description="Get a list of all products with only ID and name. Useful for dropdowns and product selection."
+)
+@cache(expire=settings.CACHE_TIME_LONG)
+@inject
+async def get_all_products_simple(
+    search: str | None = None,
+    product_service: ProductService = Depends(Provide[Container.product_service]),
+    db: AsyncSession = Depends(get_db)
+):
+    return await product_service.get_all_products_simple(db, search=search)
+
 @router.get("/{product_id}", response_model=Product,
             responses={
                 404: {"description": "Not found",
@@ -287,16 +300,3 @@ async def delete_product(
     
     # Delete the product
     await product_service.delete_product(product_id, db)
-
-@router.get("/simple", response_model=List[SimpleProductResponse],
-    summary="Get simplified products list",
-    description="Get a list of all products with only ID and name. Useful for dropdowns and product selection."
-)
-@cache(expire=settings.CACHE_TIME_LONG)
-@inject
-async def get_all_products_simple(
-    search: str = None,
-    product_service: ProductService = Depends(Provide[Container.product_service]),
-    db: AsyncSession = Depends(get_db)
-):
-    return await product_service.get_all_products_simple(db, search=search)
