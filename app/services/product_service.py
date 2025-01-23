@@ -49,14 +49,14 @@ class ProductService:
             logger.error(f"Error creating product: {str(e)}")
             raise
 
-    async def get_all_products(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
+    async def get_all_products(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> List[ProductWithCategoryResponse]:
         max_retries = 3
         retry_delay = 1  # seconds
         
         for attempt in range(max_retries):
             try:
-                logger.info("Fetching all products with categories")
-                return await self.product_repo.get_all(db)
+                logger.info(f"Fetching products with pagination (page={page}, per_page={per_page}) and search='{search}'")
+                return await self.product_repo.get_all(db, page=page, per_page=per_page, search=search)
             except (DBAPIError, InterfaceError) as e:
                 if attempt == max_retries - 1:
                     logger.error(f"Failed to fetch products after {max_retries} attempts: {e}")

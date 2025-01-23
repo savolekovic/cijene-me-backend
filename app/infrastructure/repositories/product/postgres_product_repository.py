@@ -18,7 +18,7 @@ class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
         pass
 
-    async def get_all(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> List[ProductWithCategoryResponse]:
         try:
             query = (
                 select(
@@ -26,8 +26,23 @@ class PostgresProductRepository(ProductRepository):
                     CategoryModel
                 )
                 .join(CategoryModel)
-                .order_by(asc(ProductModel.id))
+                .order_by(asc(ProductModel.created_at))
             )
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                query = query.where(
+                    ProductModel.name.ilike(search_pattern) |
+                    ProductModel.barcode.ilike(search_pattern)
+                )
+            
+            # Add ordering
+            query = query.order_by(asc(ProductModel.name))
+            
+            # Add pagination
+            offset = (page - 1) * per_page
+            query = query.offset(offset).limit(per_page)
             
             result = await db.execute(query)
             products = result.all()

@@ -10,7 +10,7 @@ class ProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_all(self, db: AsyncSession) -> List[ProductWithCategoryResponse]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> List[ProductWithCategoryResponse]:
         pass
 
     @abstractmethod

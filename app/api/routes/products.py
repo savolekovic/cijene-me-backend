@@ -140,10 +140,13 @@ async def create_product(
 @cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_products(
+    page: int = 1,
+    per_page: int = 10,
+    search: str = None,
     product_service: ProductService = Depends(Provide[Container.product_service]),
     db: AsyncSession = Depends(get_db)
 ):
-    return await product_service.get_all_products(db)
+    return await product_service.get_all_products(db, page=page, per_page=per_page, search=search)
 
 @router.get("/{product_id}", response_model=Product,
             responses={
