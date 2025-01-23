@@ -6,8 +6,7 @@ from app.domain.models.product.category import Category
 from app.infrastructure.database.models.product import CategoryModel, ProductModel
 from typing import List, Optional
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product import PaginatedCategoryResponse
-from app.api.responses.category import CategoryResponse
+from app.api.responses.category import CategoryResponse, PaginatedCategoryResponse
 
 logger = get_logger(__name__)
 

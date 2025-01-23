@@ -4,7 +4,7 @@ from app.domain.models.product import Category
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.responses.product import PaginatedCategoryResponse
+from app.api.responses.category import PaginatedCategoryResponse
 
 logger = get_logger(__name__)
 

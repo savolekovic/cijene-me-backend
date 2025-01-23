@@ -3,7 +3,7 @@ from typing import List, Optional
 from app.domain.models.product.category import Category
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.models.product import ProductModel
-from app.api.responses.product import PaginatedCategoryResponse
+from app.api.responses.category import PaginatedCategoryResponse
 
 class CategoryRepository(ABC):
     @abstractmethod

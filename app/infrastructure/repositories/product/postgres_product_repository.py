@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
-        pass
+        self.session = session
 
     async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductResponse:
         try:
