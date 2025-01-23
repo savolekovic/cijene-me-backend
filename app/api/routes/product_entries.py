@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
-from decimal import Decimal
 from app.api.models.product_entry import ProductEntryRequest
 from app.domain.models.product import ProductEntry
 from app.domain.models.auth import User
@@ -13,7 +12,7 @@ from app.services.product_entry_service import ProductEntryService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.database import get_db
-from app.api.responses.product_entry import ProductEntryWithDetails
+from app.api.responses.product_entry import ProductEntryWithDetails, PaginatedProductEntryResponse
 
 logger = get_logger(__name__)
 
@@ -74,14 +73,39 @@ async def create_product_entry(
         db=db
     )
 
-@router.get("/", response_model=List[ProductEntryWithDetails])
-@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
+@router.get("/", response_model=PaginatedProductEntryResponse)
 @inject
 async def get_all_product_entries(
-    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
-    db: AsyncSession = Depends(get_db)
-):
-    return await product_entry_service.get_all_entries(db)
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search query for filtering entries"),
+    db: AsyncSession = Depends(get_db),
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
+) -> PaginatedProductEntryResponse:
+    """
+    Get all product entries with pagination and optional search.
+    
+    Args:
+        page: Page number (default: 1)
+        per_page: Number of items per page (default: 10, max: 100)
+        search: Optional search query to filter entries
+        db: Database session
+        product_entry_service: Product entry service instance
+        
+    Returns:
+        PaginatedProductEntryResponse containing the paginated list of product entries
+    """
+    try:
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}")
+        return await product_entry_service.get_all_product_entries(
+            db=db,
+            page=page,
+            per_page=per_page,
+            search=search
+        )
+    except Exception as e:
+        logger.error(f"Error getting product entries: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/product/{product_id}", response_model=List[ProductEntry],
             responses={
