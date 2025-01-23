@@ -1,4 +1,4 @@
-from app.api.responses.product_entry import ProductEntryWithDetails
+from app.api.responses.product_entry import ProductEntryWithDetails, PaginatedProductEntryResponse
 from app.domain.repositories.product.product_entry_repo import ProductEntryRepository
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
@@ -8,15 +8,16 @@ from app.core.exceptions import NotFoundError
 from typing import List
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.infrastructure.repositories.product.postgres_product_entry_repository import PostgresProductEntryRepository
 
 logger = get_logger(__name__)
 
 class ProductEntryService:
     def __init__(
-        self, 
-        product_entry_repo: ProductEntryRepository,
+        self,
         store_location_repo: StoreLocationRepository,
-        cache_manager: CacheManager
+        cache_manager: CacheManager,
+        product_entry_repo: ProductEntryRepository = PostgresProductEntryRepository()
     ):
         self.product_entry_repo = product_entry_repo
         self.store_location_repo = store_location_repo
@@ -49,13 +50,27 @@ class ProductEntryService:
             logger.error(f"Error creating product entry: {str(e)}")
             raise
 
-    async def get_all_entries(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
-        try:
-            logger.info("Fetching all product entries with details")
-            return await self.product_entry_repo.get_all(db)
-        except Exception as e:
-            logger.error(f"Error fetching product entries with details: {str(e)}")
-            raise 
+    async def get_all_product_entries(
+        self, 
+        db: AsyncSession, 
+        page: int = 1, 
+        per_page: int = 10,
+        search: str = None
+    ) -> PaginatedProductEntryResponse:
+        """
+        Get all product entries with pagination and optional search.
+        
+        Args:
+            db: Database session
+            page: Page number (default: 1)
+            per_page: Number of items per page (default: 10)
+            search: Optional search query
+            
+        Returns:
+            PaginatedProductEntryResponse containing the paginated list of product entries
+        """
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}")
+        return await self.product_entry_repo.get_all(db, page=page, per_page=per_page, search=search)
 
     async def get_entry(self, entry_id: int, db: AsyncSession) -> ProductEntryWithDetails:
         try:
