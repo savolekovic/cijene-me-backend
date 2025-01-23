@@ -47,7 +47,9 @@ async def init_cache():
                 )
                 FastAPICache.init(
                     RedisBackend(redis),
-                    prefix=settings.CACHE_PREFIX
+                    prefix=settings.CACHE_PREFIX,
+                    key_builder=None,
+                    response_model=None
                 )
                 logger.info("Redis cache initialized successfully")
             else:
