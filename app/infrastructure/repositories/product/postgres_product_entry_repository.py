@@ -12,6 +12,7 @@ from app.infrastructure.database.models.store.store_brand import StoreBrandModel
 from app.infrastructure.database.models.store.store_location import StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry, ProductWithCategoryResponse
+from app.api.responses.product import CategoryInProduct
 
 logger = get_logger(__name__)
 
@@ -133,7 +134,10 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                         name=entry.product.name,
                         barcode=entry.product.barcode,
                         image_url=entry.product.image_url,
-                        category=entry.product.category,
+                        category=CategoryInProduct(
+                            id=entry.product.category.id,
+                            name=entry.product.category.name
+                        ),
                         created_at=entry.product.created_at
                     ),
                     store_location=StoreLocationInEntry(
