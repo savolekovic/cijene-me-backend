@@ -74,6 +74,7 @@ async def create_product_entry(
     )
 
 @router.get("/", response_model=PaginatedProductEntryResponse)
+@cache(expire=settings.CACHE_TIME_LONG, namespace="product_entries")
 @inject
 async def get_all_product_entries(
     page: int = Query(1, ge=1, description="Page number"),
@@ -119,7 +120,7 @@ async def get_all_product_entries(
                         }
                     }},
             })
-@cache(expire=settings.CACHE_TIME_SHORT)  # 5 minutes
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
 @inject
 async def get_product_entries_by_product(
     product_id: int,
@@ -161,7 +162,7 @@ async def get_product_entries_by_store_brand(
                         }
                     }},
             })
-@cache(expire=600, namespace="product_entries")
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_entries")
 @inject
 async def get_product_entries_by_store_location(
     store_location_id: int,

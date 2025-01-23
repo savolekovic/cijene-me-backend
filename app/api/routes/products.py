@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form, Query, HTTPException
 from typing import List
 from app.domain.models.product import Product
 from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product import ProductWithCategoryResponse, PaginatedProductResponse, SimpleProductResponse
+from app.api.responses.product import PaginatedProductResponse, SimpleProductResponse
 from app.api.models.product import ProductRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
@@ -14,7 +14,6 @@ from app.services.product_service import ProductService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils.file_upload import save_upload_file, delete_upload_file
-from fastapi.openapi.models import MediaType
 
 logger = get_logger(__name__)
 
@@ -136,30 +135,100 @@ async def create_product(
         db=db
     )
 
-@router.get("/", response_model=PaginatedProductResponse)
-@cache(expire=settings.CACHE_TIME_LONG)
+@router.get("/", 
+    response_model=PaginatedProductResponse,
+    summary="Get all products",
+    description="Get a paginated list of all products with optional search.",
+    responses={
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Server error",
+                        "message": "An error occurred while retrieving products"
+                    }
+                }
+            }
+        }
+    }
+)
+@cache(expire=settings.CACHE_TIME_LONG, namespace="products")
 @inject
 async def get_all_products(
-    page: int = 1,
-    per_page: int = 10,
-    search: str = None,
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search query for filtering products by name"),
     product_service: ProductService = Depends(Provide[Container.product_service]),
     db: AsyncSession = Depends(get_db)
-):
-    return await product_service.get_all_products(db, page=page, per_page=per_page, search=search)
+) -> PaginatedProductResponse:
+    """
+    Get all products with pagination and optional search.
+    
+    Args:
+        page: Page number (default: 1)
+        per_page: Number of items per page (default: 10, max: 100)
+        search: Optional search query to filter products by name
+        db: Database session
+        product_service: Product service instance
+        
+    Returns:
+        PaginatedProductResponse containing the paginated list of products
+    """
+    try:
+        logger.info(f"Getting products - page: {page}, per_page: {per_page}, search: {search}")
+        return await product_service.get_all_products(
+            db=db,
+            page=page,
+            per_page=per_page,
+            search=search
+        )
+    except Exception as e:
+        logger.error(f"Error getting products: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/simple", response_model=List[SimpleProductResponse],
+@router.get("/simple", 
+    response_model=List[SimpleProductResponse],
     summary="Get simplified products list",
-    description="Get a list of all products with only ID and name. Useful for dropdowns and product selection."
+    description="Get a list of all products with only ID and name. Useful for dropdowns and product selection.",
+    responses={
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Server error",
+                        "message": "An error occurred while retrieving products"
+                    }
+                }
+            }
+        }
+    }
 )
-@cache(expire=settings.CACHE_TIME_LONG)
+@cache(expire=settings.CACHE_TIME_LONG, namespace="products")
 @inject
 async def get_all_products_simple(
-    search: str | None = None,
+    search: str = Query(None, description="Search query for filtering products by name"),
     product_service: ProductService = Depends(Provide[Container.product_service]),
     db: AsyncSession = Depends(get_db)
-):
-    return await product_service.get_all_products_simple(db, search=search)
+) -> List[SimpleProductResponse]:
+    """
+    Get a simplified list of all products with optional search.
+    
+    Args:
+        search: Optional search query to filter products by name
+        db: Database session
+        product_service: Product service instance
+        
+    Returns:
+        List of SimpleProductResponse containing only product IDs and names
+    """
+    try:
+        logger.info(f"Getting simplified products list - search: {search}")
+        return await product_service.get_all_products_simple(db, search=search)
+    except Exception as e:
+        logger.error(f"Error getting simplified products list: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{product_id}", response_model=Product,
             responses={

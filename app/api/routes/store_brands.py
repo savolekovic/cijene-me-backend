@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.domain.models.auth import User
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
 from app.api.models.store import StoreBrandRequest
-from app.api.responses.store import StoreBrandResponse
+from app.api.responses.store import StoreBrandResponse, PaginatedStoreBrandResponse
 from fastapi_cache.decorator import cache
 from app.core.config import settings
 from app.core.container import Container
@@ -88,16 +87,40 @@ async def get_store_brand(
 ):
     return await store_brand_service.get_store_brand(store_brand_id, db)
 
-@router.get("/", response_model=List[StoreBrandResponse])
+@router.get("/", response_model=PaginatedStoreBrandResponse)
 @cache(expire=settings.CACHE_TIME_LONG)
 @inject
 async def get_all_store_brands(
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search query for filtering brands by name"),
     db: AsyncSession = Depends(get_db),
     store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
-) -> List[StoreBrandResponse]:
-    brands = await store_brand_service.get_all_store_brands(db)
-    return [StoreBrandResponse.model_validate(brand) for brand in brands]
-
+) -> PaginatedStoreBrandResponse:
+    """
+    Get all store brands with pagination and optional search.
+    
+    Args:
+        page: Page number (default: 1)
+        per_page: Number of items per page (default: 10, max: 100)
+        search: Optional search query to filter brands by name
+        db: Database session
+        store_brand_service: Store brand service instance
+        
+    Returns:
+        PaginatedStoreBrandResponse containing the paginated list of store brands
+    """
+    try:
+        logger.info(f"Getting store brands - page: {page}, per_page: {per_page}, search: {search}")
+        return await store_brand_service.get_all_store_brands(
+            db=db,
+            page=page,
+            per_page=per_page,
+            search=search
+        )
+    except Exception as e:
+        logger.error(f"Error getting store brands: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{store_brand_id}", 
     response_model=StoreBrandResponse,

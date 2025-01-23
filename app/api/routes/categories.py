@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends
-from typing import List
+from fastapi import APIRouter, Depends, Query, HTTPException
 from app.domain.models.auth import User
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.database.database import get_db
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.category import CategoryResponse
+from app.api.responses.category import CategoryResponse, PaginatedCategoryResponse
 from app.api.models.category import CategoryRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
@@ -12,7 +11,6 @@ from app.core.container import Container
 from app.services.category_service import CategoryService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.responses.product import PaginatedCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -77,13 +75,36 @@ async def create_category(
 @cache(expire=settings.CACHE_TIME_LONG, namespace="categories")
 @inject
 async def get_all_categories(
-    page: int = 1,
-    per_page: int = 10,
-    search: str = None,
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search query for filtering categories by name"),
     db: AsyncSession = Depends(get_db),
     category_service: CategoryService = Depends(Provide[Container.category_service])
-):
-    return await category_service.get_all_categories(db, page=page, per_page=per_page, search=search)
+) -> PaginatedCategoryResponse:
+    """
+    Get all categories with pagination and optional search.
+    
+    Args:
+        page: Page number (default: 1)
+        per_page: Number of items per page (default: 10, max: 100)
+        search: Optional search query to filter categories by name
+        db: Database session
+        category_service: Category service instance
+        
+    Returns:
+        PaginatedCategoryResponse containing the paginated list of categories
+    """
+    try:
+        logger.info(f"Getting categories - page: {page}, per_page: {per_page}, search: {search}")
+        return await category_service.get_all_categories(
+            db=db,
+            page=page,
+            per_page=per_page,
+            search=search
+        )
+    except Exception as e:
+        logger.error(f"Error getting categories: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{category_id}", 
     response_model=CategoryResponse,

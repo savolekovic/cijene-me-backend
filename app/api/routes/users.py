@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from fastapi import APIRouter, HTTPException, Depends, Query
 from app.api.responses.auth import UserResponse, PaginatedUserResponse
 from app.domain.models.auth import User, UserRole
 from app.api.dependencies.auth import get_current_user, get_current_admin
@@ -90,17 +89,41 @@ async def read_users_me(
         }
     }
 )
-@cache(expire=settings.CACHE_TIME_MEDIUM)
+@cache(expire=settings.CACHE_TIME_MEDIUM, namespace="users")
 @inject
 async def get_all_users(
-    page: int = 1,
-    per_page: int = 10,
-    search: str = None,
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(10, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search query for filtering users by username or email"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_admin),
     user_service: UserService = Depends(Provide[Container.user_service])
-):
-    return await user_service.get_all_users(db, page=page, per_page=per_page, search=search)
+) -> PaginatedUserResponse:
+    """
+    Get all non-admin users with pagination and optional search.
+    
+    Args:
+        page: Page number (default: 1)
+        per_page: Number of items per page (default: 10, max: 100)
+        search: Optional search query to filter users by username or email
+        db: Database session
+        current_user: Current admin user
+        user_service: User service instance
+        
+    Returns:
+        PaginatedUserResponse containing the paginated list of non-admin users
+    """
+    try:
+        logger.info(f"Getting users - page: {page}, per_page: {per_page}, search: {search}")
+        return await user_service.get_all_users(
+            db=db,
+            page=page,
+            per_page=per_page,
+            search=search
+        )
+    except Exception as e:
+        logger.error(f"Error getting users: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{user_id}/role", 
     response_model=UserResponse,
