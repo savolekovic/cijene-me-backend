@@ -12,6 +12,7 @@ from app.core.container import Container
 from app.services.category_service import CategoryService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.responses.product import PaginatedCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -68,14 +69,21 @@ async def create_category(
 ):
     return await category_service.create_category(category.name, db)
 
-@router.get("/", response_model=List[CategoryResponse])
+@router.get("/", 
+    response_model=PaginatedCategoryResponse,
+    summary="Get all categories",
+    description="Get a paginated list of all categories with optional search."
+)
 @cache(expire=settings.CACHE_TIME_LONG, namespace="categories")
 @inject
 async def get_all_categories(
+    page: int = 1,
+    per_page: int = 10,
+    search: str = None,
     db: AsyncSession = Depends(get_db),
     category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await category_service.get_all_categories(db)
+    return await category_service.get_all_categories(db, page=page, per_page=per_page, search=search)
 
 @router.put("/{category_id}", 
     response_model=CategoryResponse,

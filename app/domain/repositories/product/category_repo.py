@@ -3,6 +3,7 @@ from typing import List, Optional
 from app.domain.models.product.category import Category
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.models.product import ProductModel
+from app.api.responses.product import PaginatedCategoryResponse
 
 class CategoryRepository(ABC):
     @abstractmethod
@@ -10,7 +11,8 @@ class CategoryRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession) -> List[Category]:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedCategoryResponse:
+        """Get a paginated list of all categories with optional search."""
         pass
     
     @abstractmethod

@@ -3,8 +3,8 @@ from app.services.cache_service import CacheManager
 from app.domain.models.product import Category
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError, ValidationError
-from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.responses.product import PaginatedCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -31,10 +31,10 @@ class CategoryService:
             logger.error(f"Error creating category: {str(e)}")
             raise
 
-    async def get_all_categories(self, db: AsyncSession) -> List[Category]:
+    async def get_all_categories(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedCategoryResponse:
         try:
-            logger.info("Fetching all categories")
-            return await self.category_repo.get_all(db)
+            logger.info(f"Fetching categories with pagination (page={page}, per_page={per_page}) and search='{search}'")
+            return await self.category_repo.get_all(db, page=page, per_page=per_page, search=search)
         except Exception as e:
             logger.error(f"Error fetching categories: {str(e)}")
             raise
