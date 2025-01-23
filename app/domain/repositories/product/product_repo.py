@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.api.responses.product import ProductWithCategoryResponse, PaginatedProductResponse
+from app.api.responses.product import ProductWithCategoryResponse, PaginatedProductResponse, SimpleProductResponse
 from app.domain.models.product import Product
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,11 @@ class ProductRepository(ABC):
 
     @abstractmethod
     async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductResponse:
+        pass
+
+    @abstractmethod
+    async def get_all_simple(self, db: AsyncSession, search: str = None) -> List[SimpleProductResponse]:
+        """Get a simplified list of all products with only id and name."""
         pass
 
     @abstractmethod

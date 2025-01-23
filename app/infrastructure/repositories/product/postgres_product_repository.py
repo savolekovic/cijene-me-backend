@@ -7,7 +7,7 @@ from app.infrastructure.database.models.product import ProductModel
 from sqlalchemy import asc
 from app.core.exceptions import DatabaseError
 from app.infrastructure.database.models.product.category import CategoryModel
-from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse, PaginatedProductResponse
+from app.api.responses.product import CategoryInProduct, ProductWithCategoryResponse, PaginatedProductResponse, SimpleProductResponse, PaginatedSimpleProductResponse
 import logging
 from sqlalchemy import func
 
@@ -249,4 +249,34 @@ class PostgresProductRepository(ProductRepository):
             return result.scalars().all()
         except Exception as e:
             logger.error(f"Error getting entries for product {product_id}: {str(e)}")
-            raise DatabaseError(f"Failed to get product entries: {str(e)}") 
+            raise DatabaseError(f"Failed to get product entries: {str(e)}")
+
+    async def get_all_simple(self, db: AsyncSession, search: str = None) -> List[SimpleProductResponse]:
+        try:
+            # Base query for data
+            query = select(ProductModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                search_filter = ProductModel.name.ilike(search_pattern)
+                query = query.where(search_filter)
+            
+            # Add ordering
+            query = query.order_by(asc(ProductModel.name))
+            
+            # Get data
+            result = await db.execute(query)
+            products = result.scalars().all()
+            
+            # Convert to response model
+            return [
+                SimpleProductResponse(
+                    id=product.id,
+                    name=product.name
+                )
+                for product in products
+            ]
+        except Exception as e:
+            logger.error(f"Error getting simplified products list: {str(e)}")
+            raise DatabaseError(f"Failed to get simplified products list: {str(e)}") 

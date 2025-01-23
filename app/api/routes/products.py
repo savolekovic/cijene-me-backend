@@ -5,7 +5,7 @@ from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product import ProductWithCategoryResponse, PaginatedProductResponse
+from app.api.responses.product import ProductWithCategoryResponse, PaginatedProductResponse, SimpleProductResponse
 from app.api.models.product import ProductRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
@@ -287,3 +287,16 @@ async def delete_product(
     
     # Delete the product
     await product_service.delete_product(product_id, db)
+
+@router.get("/simple", response_model=List[SimpleProductResponse],
+    summary="Get simplified products list",
+    description="Get a list of all products with only ID and name. Useful for dropdowns and product selection."
+)
+@cache(expire=settings.CACHE_TIME_LONG)
+@inject
+async def get_all_products_simple(
+    search: str = None,
+    product_service: ProductService = Depends(Provide[Container.product_service]),
+    db: AsyncSession = Depends(get_db)
+):
+    return await product_service.get_all_products_simple(db, search=search)

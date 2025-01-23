@@ -21,5 +21,12 @@ class ProductWithCategoryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class SimpleProductResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
 # Use the generic PaginatedResponse with ProductWithCategoryResponse
 PaginatedProductResponse = PaginatedResponse[ProductWithCategoryResponse]

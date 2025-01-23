@@ -7,7 +7,7 @@ from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.responses.product import ProductWithCategoryResponse
+from app.api.responses.product import ProductWithCategoryResponse, SimpleProductResponse
 from sqlalchemy.exc import DBAPIError, InterfaceError
 import asyncio
 
@@ -146,3 +146,24 @@ class ProductService:
         except Exception as e:
             logger.error(f"Error deleting product {product_id}: {str(e)}")
             raise
+
+    async def get_all_products_simple(self, db: AsyncSession, search: str = None) -> List[SimpleProductResponse]:
+        max_retries = 3
+        retry_delay = 1  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Fetching simplified products list with search='{search}'")
+                return await self.product_repo.get_all_simple(db, search=search)
+            except (DBAPIError, InterfaceError) as e:
+                if attempt == max_retries - 1:
+                    logger.error(f"Failed to fetch simplified products after {max_retries} attempts: {e}")
+                    raise
+                logger.warning(f"Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                await asyncio.sleep(retry_delay)
+                # Create new session if needed
+                if not db.is_active:
+                    db = AsyncSessionLocal()
+            except Exception as e:
+                logger.error(f"Error getting simplified products list: {str(e)}")
+                raise
