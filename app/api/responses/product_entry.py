@@ -1,5 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel
+from decimal import Decimal
+
+from app.api.responses.product import ProductWithCategoryResponse
 
 class ProductInEntry(BaseModel):
     id: int
@@ -17,7 +20,10 @@ class StoreLocationInEntry(BaseModel):
 
 class ProductEntryWithDetails(BaseModel):
     id: int
-    price: float
+    price: Decimal
     created_at: datetime
-    product: ProductInEntry
-    store_location: StoreLocationInEntry 
+    product: ProductWithCategoryResponse
+    store_location: StoreLocationInEntry
+
+    class Config:
+        from_attributes = True 

@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, asc
+from sqlalchemy import select, asc, desc
+from sqlalchemy.orm import joinedload
 from typing import List, Optional
 from decimal import Decimal
 from app.core.exceptions import DatabaseError
@@ -10,7 +11,7 @@ from app.infrastructure.database.models.product.product import ProductModel
 from app.infrastructure.database.models.store.store_brand import StoreBrandModel
 from app.infrastructure.database.models.store.store_location import StoreLocationModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry
+from app.api.responses.product_entry import ProductEntryWithDetails, ProductInEntry, StoreBrandInEntry, StoreLocationInEntry, ProductWithCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -110,45 +111,45 @@ class PostgresProductEntryRepository(ProductEntryRepository):
     async def get_all(self, db: AsyncSession) -> List[ProductEntryWithDetails]:
         try:
             query = (
-                select(
-                    ProductEntryModel,
-                    ProductModel,
-                    StoreLocationModel,
-                    StoreBrandModel
+                select(ProductEntryModel)
+                .options(
+                    joinedload(ProductEntryModel.product)
+                    .joinedload(ProductModel.category),
+                    joinedload(ProductEntryModel.store_location)
+                    .joinedload(StoreLocationModel.store_brand)
                 )
-                .join(ProductModel, ProductEntryModel.product_id == ProductModel.id)
-                .join(StoreLocationModel, ProductEntryModel.store_location_id == StoreLocationModel.id)
-                .join(StoreBrandModel, ProductEntryModel.store_brand_id == StoreBrandModel.id)
-                .order_by(ProductEntryModel.created_at.desc())
+                .order_by(desc(ProductEntryModel.created_at))
             )
-            
             result = await db.execute(query)
-            entries = result.all()
+            entries = result.unique().scalars().all()
             
             return [
                 ProductEntryWithDetails(
-                    id=entry[0].id,
-                    price=float(entry[0].price),
-                    created_at=entry[0].created_at,
-                    product=ProductInEntry(
-                        id=entry[1].id,
-                        name=entry[1].name,
-                        barcode=entry[1].barcode
+                    id=entry.id,
+                    price=entry.price,
+                    created_at=entry.created_at,
+                    product=ProductWithCategoryResponse(
+                        id=entry.product.id,
+                        name=entry.product.name,
+                        barcode=entry.product.barcode,
+                        image_url=entry.product.image_url,
+                        category=entry.product.category,
+                        created_at=entry.product.created_at
                     ),
                     store_location=StoreLocationInEntry(
-                        id=entry[2].id,
-                        address=entry[2].address,
+                        id=entry.store_location.id,
+                        address=entry.store_location.address,
                         store_brand=StoreBrandInEntry(
-                            id=entry[3].id,
-                            name=entry[3].name
+                            id=entry.store_location.store_brand.id,
+                            name=entry.store_location.store_brand.name
                         )
                     )
                 )
                 for entry in entries
             ]
         except Exception as e:
-            logger.error(f"Error getting product entries with details: {str(e)}")
-            raise DatabaseError(f"Failed to get product entries: {str(e)}")
+            logger.error(f"Error getting all product entries: {str(e)}")
+            raise
 
     async def delete(self, entry_id: int, db: AsyncSession) -> bool:
         try:
