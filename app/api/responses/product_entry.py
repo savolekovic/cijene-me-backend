@@ -2,12 +2,14 @@ from datetime import datetime
 from pydantic import BaseModel
 from decimal import Decimal
 from app.api.responses.common import PaginatedResponse
-from app.api.responses.product import ProductWithCategoryResponse
 
 class ProductInEntry(BaseModel):
     id: int
     name: str
-    barcode: str
+    image_url: str
+
+    class Config:
+        from_attributes = True
 
 class StoreBrandInEntry(BaseModel):
     id: int
@@ -28,7 +30,7 @@ class ProductEntryWithDetails(BaseModel):
     id: int
     price: Decimal
     created_at: datetime
-    product: ProductWithCategoryResponse
+    product: ProductInEntry
     store_location: StoreLocationInEntry
 
     class Config:

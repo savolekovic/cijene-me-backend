@@ -169,17 +169,10 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                         id=entry.id,
                         price=entry.price,
                         created_at=entry.created_at,
-                        product=ProductWithCategoryResponse(
+                        product=ProductInEntry(
                             id=entry.product.id,
                             name=entry.product.name,
-                            barcode=entry.product.barcode,
-                            image_url=entry.product.image_url,
-                            category=CategoryResponse(
-                                id=entry.product.category.id,
-                                name=entry.product.category.name,
-                                created_at=entry.product.category.created_at
-                            ),
-                            created_at=entry.product.created_at
+                            image_url=entry.product.image_url
                         ),
                         store_location=StoreLocationInEntry(
                             id=entry.store_location.id,
