@@ -150,11 +150,17 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             raise DatabaseError(f"Failed to get store locations: {str(e)}")
 
     async def get_by_store_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:
-        result = await db.execute(
-            select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
-        )
-        store_location = result.scalar_one_or_none()
-        return StoreLocation.model_validate(store_location) if store_location else None
+        try:
+            result = await db.execute(
+                select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
+            )
+            locations = result.scalars().all()
+            if not locations:
+                logger.warning(f"No locations found for store brand {store_brand_id}")
+            return [StoreLocation.model_validate(location) for location in locations]
+        except Exception as e:
+            logger.error(f"Error getting locations by store brand {store_brand_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get locations by store brand: {str(e)}")
 
     async def update(self, location_id: int, store_location: StoreLocation, db: AsyncSession) -> Optional[StoreLocationResponse]:
         try:
@@ -196,27 +202,22 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             raise DatabaseError(f"Failed to update store location: {str(e)}")
 
     async def delete(self, location_id: int, db: AsyncSession) -> bool:
-        result = await db.execute(
-            select(StoreLocationModel).where(StoreLocationModel.id == location_id)
-        )
-        store_location = result.scalar_one_or_none()
-        if store_location:
-            await db.delete(store_location)
-            await db.flush()
-            await db.commit()
-            return True
-        return False
-
-    async def get_by_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:
         try:
             result = await db.execute(
-                select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
+                select(StoreLocationModel).where(StoreLocationModel.id == location_id)
             )
-            locations = result.scalars().all()
-            return [StoreLocation.model_validate(location) for location in locations]
+            store_location = result.scalar_one_or_none()
+            if store_location:
+                await db.delete(store_location)
+                await db.flush()
+                await db.commit()
+                return True
+            logger.warning(f"Store location not found for deletion: {location_id}")
+            return False
         except Exception as e:
-            logger.error(f"Error getting locations by brand: {str(e)}")
-            raise DatabaseError(f"Failed to get locations by brand: {str(e)}")
+            logger.error(f"Error deleting store location {location_id}: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to delete store location: {str(e)}")
 
     async def get_product_entries_for_location(self, location_id: int, db: AsyncSession) -> List[ProductEntryModel]:
         try:

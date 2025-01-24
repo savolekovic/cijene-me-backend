@@ -169,6 +169,7 @@ class PostgresProductRepository(ProductRepository):
                 await db.flush()
                 await db.commit()
                 return True
+            logger.warning(f"Product not found for deletion: {product_id}")
             return False
         except Exception as e:
             logger.error(f"Error deleting product {product_id}: {str(e)}")
