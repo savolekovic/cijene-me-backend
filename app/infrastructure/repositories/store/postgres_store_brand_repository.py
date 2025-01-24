@@ -47,9 +47,8 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
                 created_at=db_store_brand.created_at
             )
         except Exception as e:
-            if not isinstance(e, NotFoundError):
-                raise DatabaseError(str(e))
-            raise
+            logger.error(f"Error getting store brand {store_brand_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get store brand: {str(e)}")
 
     async def update(self, store_brand_id: int, store_brand: StoreBrand, db: AsyncSession) -> Optional[StoreBrand]:
         try:
