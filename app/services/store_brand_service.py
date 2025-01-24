@@ -1,4 +1,4 @@
-from app.api.responses.store import SimpleStoreBrandResponse
+from app.api.responses.store import PaginatedStoreBrandResponse, SimpleStoreBrandResponse
 from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store.store_brand import StoreBrand
@@ -37,10 +37,10 @@ class StoreBrandService:
             logger.error(f"Error fetching store brand {store_brand_id}: {str(e)}")
             raise
 
-    async def get_all_store_brands(self, db: AsyncSession) -> List[StoreBrand]:
+    async def get_all_store_brands(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreBrandResponse:
         try:
-            logger.info("Fetching all store brands")
-            return await self.store_brand_repo.get_all(db)
+            logger.info(f"Fetching store brands with pagination (page={page}, per_page={per_page}) and search='{search}'")
+            return await self.store_brand_repo.get_all(db, page=page, per_page=per_page, search=search)
         except Exception as e:
             logger.error(f"Error fetching store brands: {str(e)}")
             raise

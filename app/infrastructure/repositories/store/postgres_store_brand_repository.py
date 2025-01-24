@@ -122,27 +122,27 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             total_count = count_result.scalar()
             
             # Add ordering and pagination to the main query
-            query = query.order_by(asc(StoreBrandModel.name))
+            query = query.order_by(StoreBrandModel.name)
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
             # Get paginated data
             result = await db.execute(query)
-            brands = result.scalars().all()
+            store_brands = result.scalars().all()
             
             # Convert to response model
-            brand_list = [
+            store_brand_list = [
                 StoreBrandResponse(
                     id=brand.id,
                     name=brand.name,
                     created_at=brand.created_at
                 )
-                for brand in brands
+                for brand in store_brands
             ]
             
             return PaginatedStoreBrandResponse(
                 total_count=total_count,
-                data=brand_list
+                data=store_brand_list
             )
         except Exception as e:
             logger.error(f"Error getting store brands: {str(e)}")
