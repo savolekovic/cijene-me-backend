@@ -5,12 +5,13 @@ from app.api.responses.category import CategoryResponse
 from app.domain.models.product.product import Product
 from app.domain.repositories.product.product_repo import ProductRepository
 from app.infrastructure.database.models.product import ProductModel
-from sqlalchemy import asc
+from sqlalchemy import asc, desc
 from app.core.exceptions import DatabaseError
 from app.infrastructure.database.models.product.category import CategoryModel
 from app.api.responses.product import PaginatedProductResponse, ProductWithCategoryResponse, SimpleProductResponse
 import logging
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app.infrastructure.database.models.product.product_entry import ProductEntryModel
 
@@ -20,15 +21,14 @@ class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
         self.session = session
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductResponse:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedProductResponse:
         try:
             # Base query for data
             query = (
-                select(
-                    ProductModel,
-                    CategoryModel
+                select(ProductModel)
+                .options(
+                    joinedload(ProductModel.category)
                 )
-                .join(CategoryModel)
             )
             
             # Base query for count
@@ -37,10 +37,7 @@ class PostgresProductRepository(ProductRepository):
             # Add search filter if search query is provided
             if search:
                 search_pattern = f"%{search}%"
-                search_filter = (
-                    ProductModel.name.ilike(search_pattern) |
-                    ProductModel.barcode.ilike(search_pattern)
-                )
+                search_filter = ProductModel.name.ilike(search_pattern)
                 query = query.where(search_filter)
                 count_query = count_query.where(search_filter)
             
@@ -48,14 +45,20 @@ class PostgresProductRepository(ProductRepository):
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
             total_count = count_result.scalar()
             
-            # Add ordering and pagination to the main query
-            query = query.order_by(asc(ProductModel.name))
+            # Add ordering
+            order_column = getattr(ProductModel, order_by, ProductModel.name)
+            if order_direction.lower() == "desc":
+                query = query.order_by(desc(order_column))
+            else:
+                query = query.order_by(asc(order_column))
+            
+            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
             # Get paginated data
             result = await db.execute(query)
-            products = result.all()
+            products = result.unique().scalars().all()
             
             # Convert to response model
             product_list = [
@@ -79,8 +82,8 @@ class PostgresProductRepository(ProductRepository):
                 data=product_list
             )
         except Exception as e:
-            logger.error(f"Error getting all products: {str(e)}")
-            raise DatabaseError(f"Failed to get all products: {str(e)}")
+            logger.error(f"Error getting products: {str(e)}")
+            raise DatabaseError(f"Failed to get products: {str(e)}")
 
     async def create(self, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:

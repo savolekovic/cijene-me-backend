@@ -138,7 +138,7 @@ async def create_product(
 @router.get("/", 
     response_model=PaginatedProductResponse,
     summary="Get all products",
-    description="Get a paginated list of all products with optional search.",
+    description="Get a paginated list of all products with optional search and ordering.",
     responses={
         500: {
             "description": "Internal Server Error",
@@ -159,6 +159,8 @@ async def get_all_products(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering products by name"),
+    order_by: str = Query("name", description="Field to order by (name, barcode, created_at)"),
+    order_direction: str = Query("asc", description="Order direction (asc or desc)"),
     product_service: ProductService = Depends(Provide[Container.product_service]),
     db: AsyncSession = Depends(get_db)
 ) -> PaginatedProductResponse:
@@ -169,6 +171,8 @@ async def get_all_products(
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter products by name
+        order_by: Field to order by (default: name)
+        order_direction: Order direction (asc or desc) (default: asc)
         db: Database session
         product_service: Product service instance
         
@@ -176,12 +180,14 @@ async def get_all_products(
         PaginatedProductResponse containing the paginated list of products
     """
     try:
-        logger.info(f"Getting products - page: {page}, per_page: {per_page}, search: {search}")
+        logger.info(f"Getting products - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
         return await product_service.get_all_products(
             db=db,
             page=page,
             per_page=per_page,
-            search=search
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
         )
     except Exception as e:
         logger.error(f"Error getting products: {str(e)}")
