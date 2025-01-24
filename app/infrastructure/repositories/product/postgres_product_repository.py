@@ -94,14 +94,7 @@ class PostgresProductRepository(ProductRepository):
             await db.flush()
             await db.commit()
             
-            return Product(
-                id=db_product.id,
-                name=db_product.name,
-                barcode=db_product.barcode,
-                image_url=db_product.image_url,
-                category_id=db_product.category_id,
-                created_at=db_product.created_at
-            )
+            return Product.model_validate(db_product)
         except Exception as e:
             logger.error(f"Error creating product: {str(e)}")
             await db.rollback()
