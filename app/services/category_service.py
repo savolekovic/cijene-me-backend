@@ -32,10 +32,17 @@ class CategoryService:
             logger.error(f"Error creating category: {str(e)}")
             raise
 
-    async def get_all_categories(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedCategoryResponse:
+    async def get_all_categories(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedCategoryResponse:
         try:
-            logger.info(f"Fetching categories with pagination (page={page}, per_page={per_page}) and search='{search}'")
-            return await self.category_repo.get_all(db, page=page, per_page=per_page, search=search)
+            logger.info(f"Fetching categories with pagination (page={page}, per_page={per_page}) and search='{search}', order_by={order_by}, order_direction={order_direction}")
+            return await self.category_repo.get_all(
+                db=db,
+                page=page,
+                per_page=per_page,
+                search=search,
+                order_by=order_by,
+                order_direction=order_direction
+            )
         except Exception as e:
             logger.error(f"Error fetching categories: {str(e)}")
             raise

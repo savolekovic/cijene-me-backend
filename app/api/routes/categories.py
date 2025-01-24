@@ -71,7 +71,7 @@ async def create_category(
 @router.get("/", 
     response_model=PaginatedCategoryResponse,
     summary="Get all categories",
-    description="Get a paginated list of all categories with optional search."
+    description="Get a paginated list of all categories with optional search and ordering."
 )
 @cache(expire=settings.CACHE_TIME_LONG, namespace="categories")
 @inject
@@ -79,6 +79,8 @@ async def get_all_categories(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering categories by name"),
+    order_by: str = Query("name", description="Field to order by (name, created_at)"),
+    order_direction: str = Query("asc", description="Order direction (asc or desc)"),
     db: AsyncSession = Depends(get_db),
     category_service: CategoryService = Depends(Provide[Container.category_service])
 ) -> PaginatedCategoryResponse:
@@ -89,6 +91,8 @@ async def get_all_categories(
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter categories by name
+        order_by: Field to order by (default: name)
+        order_direction: Order direction (asc or desc) (default: asc)
         db: Database session
         category_service: Category service instance
         
@@ -96,12 +100,14 @@ async def get_all_categories(
         PaginatedCategoryResponse containing the paginated list of categories
     """
     try:
-        logger.info(f"Getting categories - page: {page}, per_page: {per_page}, search: {search}")
+        logger.info(f"Getting categories - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
         return await category_service.get_all_categories(
             db=db,
             page=page,
             per_page=per_page,
-            search=search
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
         )
     except Exception as e:
         logger.error(f"Error getting categories: {str(e)}")

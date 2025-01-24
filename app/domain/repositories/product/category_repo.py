@@ -11,8 +11,8 @@ class CategoryRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedCategoryResponse:
-        """Get a paginated list of all categories with optional search."""
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedCategoryResponse:
+        """Get a paginated list of all categories with optional search and ordering."""
         pass
     
     @abstractmethod

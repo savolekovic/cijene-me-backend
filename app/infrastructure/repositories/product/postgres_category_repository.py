@@ -1,4 +1,4 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DatabaseError
 from app.domain.repositories.product.category_repo import CategoryRepository
@@ -30,7 +30,7 @@ class PostgresCategoryRepository(CategoryRepository):
             await db.rollback()
             raise DatabaseError(f"Failed to create category: {str(e)}")
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedCategoryResponse:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedCategoryResponse:
         try:
             # Base query for data
             query = select(CategoryModel)
@@ -49,8 +49,14 @@ class PostgresCategoryRepository(CategoryRepository):
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
             total_count = count_result.scalar()
             
-            # Add ordering and pagination to the main query
-            query = query.order_by(CategoryModel.name)
+            # Add ordering
+            order_column = getattr(CategoryModel, order_by, CategoryModel.name)
+            if order_direction.lower() == "desc":
+                query = query.order_by(desc(order_column))
+            else:
+                query = query.order_by(asc(order_column))
+            
+            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
