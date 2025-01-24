@@ -159,4 +159,22 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             return locations
         except Exception as e:
             logger.error(f"Error getting locations for store brand {store_brand_id}: {str(e)}")
-            raise DatabaseError(f"Failed to get locations for store brand: {str(e)}") 
+            raise DatabaseError(f"Failed to get locations for store brand: {str(e)}")
+
+    async def get_by_name(self, name: str, db: AsyncSession) -> Optional[StoreBrand]:
+        try:
+            result = await db.execute(
+                select(StoreBrandModel).where(StoreBrandModel.name.ilike(name))
+            )
+            db_store_brand = result.scalar_one_or_none()
+            
+            if db_store_brand:
+                return StoreBrand(
+                    id=db_store_brand.id,
+                    name=db_store_brand.name,
+                    created_at=db_store_brand.created_at
+                )
+            return None
+        except Exception as e:
+            logger.error(f"Error getting store brand by name: {str(e)}")
+            raise DatabaseError(f"Failed to get store brand by name: {str(e)}") 
