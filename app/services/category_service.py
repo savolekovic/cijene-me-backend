@@ -4,7 +4,8 @@ from app.domain.models.product import Category
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.responses.category import PaginatedCategoryResponse
+from app.api.responses.category import PaginatedCategoryResponse, SimpleCategoryResponse
+from typing import List
 
 logger = get_logger(__name__)
 
@@ -88,4 +89,12 @@ class CategoryService:
             return updated_category
         except Exception as e:
             logger.error(f"Error updating category {category_id}: {str(e)}")
+            raise
+
+    async def get_all_categories_simple(self, db: AsyncSession, search: str = None) -> List[SimpleCategoryResponse]:
+        try:
+            logger.info(f"Fetching simplified categories list with search='{search}'")
+            return await self.category_repo.get_all_simple(db, search=search)
+        except Exception as e:
+            logger.error(f"Error fetching simplified categories list: {str(e)}")
             raise 

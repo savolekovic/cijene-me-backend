@@ -3,7 +3,7 @@ from app.domain.models.auth import User
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.database.database import get_db
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.category import CategoryResponse, PaginatedCategoryResponse
+from app.api.responses.category import CategoryResponse, PaginatedCategoryResponse, SimpleCategoryResponse
 from app.api.models.category import CategoryRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
@@ -11,6 +11,7 @@ from app.core.container import Container
 from app.services.category_service import CategoryService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
 
 logger = get_logger(__name__)
 
@@ -105,6 +106,49 @@ async def get_all_categories(
     except Exception as e:
         logger.error(f"Error getting categories: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/simple", 
+    response_model=List[SimpleCategoryResponse],
+    summary="Get simplified categories list",
+    description="Get a list of all categories with only ID and name. Useful for dropdowns and category selection.",
+    responses={
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Server error",
+                        "message": "An error occurred while retrieving categories"
+                    }
+                }
+            }
+        }
+    }
+)
+@cache(expire=settings.CACHE_TIME_LONG, namespace="categories")
+@inject
+async def get_all_categories_simple(
+    search: str = Query(None, description="Search query for filtering categories by name"),
+    category_service: CategoryService = Depends(Provide[Container.category_service]),
+    db: AsyncSession = Depends(get_db)
+) -> List[SimpleCategoryResponse]:
+    """
+    Get a simplified list of all categories with optional search.
+    
+    Args:
+        search: Optional search query to filter categories by name
+        db: Database session
+        category_service: Category service instance
+        
+    Returns:
+        List of SimpleCategoryResponse containing only category IDs and names
+    """
+    try:
+        logger.info(f"Getting simplified categories list - search: {search}")
+        return await category_service.get_all_categories_simple(db, search=search)
+    except Exception as e:
+        logger.error(f"Error getting simplified categories list: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e)) 
 
 @router.put("/{category_id}", 
     response_model=CategoryResponse,
@@ -224,4 +268,4 @@ async def get_category(
     db: AsyncSession = Depends(get_db),
     category_service: CategoryService = Depends(Provide[Container.category_service])
 ):
-    return await category_service.get_category(category_id, db) 
+    return await category_service.get_category(category_id, db)

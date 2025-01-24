@@ -10,6 +10,13 @@ class CategoryResponse(BaseModel):
 
     class Config:
         from_attributes = True 
-        
+
+class SimpleCategoryResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
 # Use the generic PaginatedResponse with CategoryResponse for category listing
 PaginatedCategoryResponse = PaginatedResponse[CategoryResponse]

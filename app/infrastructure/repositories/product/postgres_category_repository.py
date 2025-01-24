@@ -6,7 +6,7 @@ from app.domain.models.product.category import Category
 from app.infrastructure.database.models.product import CategoryModel, ProductModel
 from typing import List, Optional
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.category import CategoryResponse, PaginatedCategoryResponse
+from app.api.responses.category import CategoryResponse, PaginatedCategoryResponse, SimpleCategoryResponse
 
 logger = get_logger(__name__)
 
@@ -124,3 +124,32 @@ class PostgresCategoryRepository(CategoryRepository):
         except Exception as e:
             logger.error(f"Error getting products in category {category_id}: {str(e)}")
             raise DatabaseError(f"Failed to get products in category: {str(e)}")
+
+    async def get_all_simple(self, db: AsyncSession, search: str = None) -> List[SimpleCategoryResponse]:
+        try:
+            # Base query
+            query = select(CategoryModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                query = query.where(CategoryModel.name.ilike(search_pattern))
+            
+            # Add ordering
+            query = query.order_by(CategoryModel.name)
+            
+            # Get data
+            result = await db.execute(query)
+            categories = result.scalars().all()
+            
+            # Convert to response model
+            return [
+                SimpleCategoryResponse(
+                    id=category.id,
+                    name=category.name
+                )
+                for category in categories
+            ]
+        except Exception as e:
+            logger.error(f"Error getting simplified categories list: {str(e)}")
+            raise DatabaseError(f"Failed to get simplified categories list: {str(e)}")
