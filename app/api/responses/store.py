@@ -36,6 +36,7 @@ class StoreLocationResponse(BaseModel):
 class SimpleStoreLocationResponse(BaseModel):
     id: int
     address: str
+    store_brand_name: str
 
     class Config:
         from_attributes = True

@@ -253,7 +253,10 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
     async def get_all_simple(self, db: AsyncSession, search: str = None, store_brand_id: int = None) -> List[SimpleStoreLocationResponse]:
         try:
             # Base query
-            query = select(StoreLocationModel).join(StoreBrandModel)
+            query = (
+                select(StoreLocationModel, StoreBrandModel.name.label('store_brand_name'))
+                .join(StoreBrandModel)
+            )
             
             # Add search filter if search query is provided
             if search:
@@ -273,13 +276,14 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             
             # Get data
             result = await db.execute(query)
-            locations = result.scalars().all()
+            locations = result.all()
             
             # Convert to response model
             return [
                 SimpleStoreLocationResponse(
-                    id=location.id,
-                    address=location.address
+                    id=location[0].id,
+                    address=location[0].address,
+                    store_brand_name=location[1]
                 )
                 for location in locations
             ]
