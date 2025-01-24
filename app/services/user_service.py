@@ -14,10 +14,17 @@ class UserService:
         self.user_repo = user_repo
         self.cache_manager = cache_manager
 
-    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedUserResponse:
+    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "full_name", order_direction: str = "asc") -> PaginatedUserResponse:
         try:
-            logger.info(f"Fetching users with pagination (page={page}, per_page={per_page}) and search='{search}'")
-            return await self.user_repo.get_all_users(db, page=page, per_page=per_page, search=search)
+            logger.info(f"Fetching users with pagination (page={page}, per_page={per_page}) and search='{search}', order_by={order_by}, order_direction={order_direction}")
+            return await self.user_repo.get_all_users(
+                db=db,
+                page=page,
+                per_page=per_page,
+                search=search,
+                order_by=order_by,
+                order_direction=order_direction
+            )
         except Exception as e:
             logger.error(f"Error fetching users: {str(e)}")
             raise

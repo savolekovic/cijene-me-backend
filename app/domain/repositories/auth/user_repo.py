@@ -22,8 +22,8 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedUserResponse:
-        """Get a paginated list of all non-admin users with optional search."""
+    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "full_name", order_direction: str = "asc") -> PaginatedUserResponse:
+        """Get a paginated list of all non-admin users with optional search and ordering."""
         pass
 
     @abstractmethod

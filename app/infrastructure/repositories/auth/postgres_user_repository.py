@@ -5,7 +5,7 @@ from app.domain.models.auth.user import User
 from app.domain.repositories.auth.user_repo import UserRepository
 from app.infrastructure.database.models.auth import UserModel
 from app.domain.models.auth.user_role import UserRole
-from sqlalchemy import asc, or_
+from sqlalchemy import asc, or_, desc
 from app.core.exceptions import DatabaseError
 import logging
 from app.api.responses.auth import UserResponse, PaginatedUserResponse
@@ -75,7 +75,7 @@ class PostgresUserRepository(UserRepository):
             db_user.refresh_token = refresh_token
             await db.commit()
 
-    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedUserResponse:
+    async def get_all_users(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "full_name", order_direction: str = "asc") -> PaginatedUserResponse:
         try:
             # Base query for data
             query = select(UserModel).where(UserModel.role != UserRole.ADMIN)
@@ -97,8 +97,14 @@ class PostgresUserRepository(UserRepository):
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
             total_count = count_result.scalar()
             
-            # Add ordering and pagination to the main query
-            query = query.order_by(asc(UserModel.full_name))
+            # Add ordering
+            order_column = getattr(UserModel, order_by, UserModel.full_name)
+            if order_direction.lower() == "desc":
+                query = query.order_by(desc(order_column))
+            else:
+                query = query.order_by(asc(order_column))
+            
+            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             

@@ -95,6 +95,8 @@ async def get_all_users(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering users by username or email"),
+    order_by: str = Query("full_name", description="Field to order by (full_name, email, created_at)"),
+    order_direction: str = Query("asc", description="Order direction (asc or desc)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_admin),
     user_service: UserService = Depends(Provide[Container.user_service])
@@ -106,6 +108,8 @@ async def get_all_users(
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter users by username or email
+        order_by: Field to order by (default: full_name)
+        order_direction: Order direction (asc or desc) (default: asc)
         db: Database session
         current_user: Current admin user
         user_service: User service instance
@@ -114,12 +118,14 @@ async def get_all_users(
         PaginatedUserResponse containing the paginated list of non-admin users
     """
     try:
-        logger.info(f"Getting users - page: {page}, per_page: {per_page}, search: {search}")
+        logger.info(f"Getting users - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
         return await user_service.get_all_users(
             db=db,
             page=page,
             per_page=per_page,
-            search=search
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
         )
     except Exception as e:
         logger.error(f"Error getting users: {str(e)}")
