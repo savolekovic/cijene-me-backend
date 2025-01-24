@@ -1,4 +1,4 @@
-from app.api.responses.store import StoreLocationResponse
+from app.api.responses.store import StoreLocationResponse, PaginatedStoreLocationResponse
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store import StoreLocation
@@ -31,12 +31,12 @@ class StoreLocationService:
             logger.error(f"Error creating store location: {str(e)}")
             raise
 
-    async def get_all_store_locations(self, db: AsyncSession) -> List[StoreLocationResponse]:
+    async def get_all_store_locations(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreLocationResponse:
         try:
-            logger.info("Fetching all store locations with brand details")
-            return await self.store_location_repo.get_all(db)
+            logger.info(f"Fetching store locations with pagination (page={page}, per_page={per_page}) and search='{search}'")
+            return await self.store_location_repo.get_all(db, page=page, per_page=per_page, search=search)
         except Exception as e:
-            logger.error(f"Error fetching store locations with details: {str(e)}")
+            logger.error(f"Error fetching store locations: {str(e)}")
             raise
 
     async def get_location(self, location_id: int, db: AsyncSession) -> StoreLocationResponse:

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import asc, select, func
+from sqlalchemy import select, func
 from typing import List, Optional
 from app.domain.models.store.store_brand import StoreBrand
 from app.domain.repositories.store.store_brand_repo import StoreBrandRepository

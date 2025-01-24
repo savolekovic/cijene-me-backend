@@ -94,15 +94,15 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         try:
             # Base query for data
             query = (
-                select(
-                    StoreLocationModel,
-                    StoreBrandModel
-                )
+                select(StoreLocationModel, StoreBrandModel)
                 .join(StoreBrandModel)
             )
             
             # Base query for count
-            count_query = select(StoreLocationModel).join(StoreBrandModel)
+            count_query = (
+                select(StoreLocationModel)
+                .join(StoreBrandModel)
+            )
             
             # Add search filter if search query is provided
             if search:
@@ -119,7 +119,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             total_count = count_result.scalar()
             
             # Add ordering and pagination to the main query
-            query = query.order_by(asc(StoreLocationModel.address))
+            query = query.order_by(StoreBrandModel.name, StoreLocationModel.address)
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
