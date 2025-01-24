@@ -70,7 +70,7 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 product=ProductInEntry(
                     id=entry[1].id,
                     name=entry[1].name,
-                    barcode=entry[1].barcode
+                    image_url=entry[1].image_url
                 ),
                 store_location=StoreLocationInEntry(
                     id=entry[2].id,
