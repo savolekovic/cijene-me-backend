@@ -97,6 +97,7 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                     id=product_entry.id,
                     price=product_entry.price,
                     product_id=product_entry.product_id,
+                    store_brand_id=product_entry.store_brand_id,
                     store_location_id=product_entry.store_location_id,
                     created_at=product_entry.created_at
                 )
