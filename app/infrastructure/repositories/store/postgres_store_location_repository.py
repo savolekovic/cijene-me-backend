@@ -231,3 +231,21 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         except Exception as e:
             logger.error(f"Error getting product entries for location {location_id}: {str(e)}")
             raise DatabaseError(f"Failed to get product entries for location: {str(e)}")
+
+    async def get_by_brand(self, store_brand_id: int, db: AsyncSession) -> List[StoreLocation]:
+        try:
+            result = await db.execute(
+                select(StoreLocationModel).where(StoreLocationModel.store_brand_id == store_brand_id)
+            )
+            locations = result.scalars().all()
+            return [
+                StoreLocation(
+                    id=location.id,
+                    address=location.address,
+                    store_brand_id=location.store_brand_id,
+                    created_at=location.created_at
+                ) for location in locations
+            ]
+        except Exception as e:
+            logger.error(f"Error getting store locations by brand {store_brand_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get store locations by brand: {str(e)}")

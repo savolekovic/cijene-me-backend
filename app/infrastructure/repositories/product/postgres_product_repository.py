@@ -82,19 +82,25 @@ class PostgresProductRepository(ProductRepository):
             logger.error(f"Error getting all products: {str(e)}")
             raise DatabaseError(f"Failed to get all products: {str(e)}")
 
-    async def create(self, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
+    async def create(self, product: Product, db: AsyncSession) -> Product:
         try:
             db_product = ProductModel(
-                name=name,
-                barcode=barcode,
-                image_url=image_url,
-                category_id=category_id
+                name=product.name,
+                barcode=product.barcode,
+                image_url=product.image_url,
+                category_id=product.category_id
             )
             db.add(db_product)
             await db.flush()
             await db.commit()
-            
-            return Product.model_validate(db_product)
+            return Product(
+                id=db_product.id,
+                name=db_product.name,
+                barcode=db_product.barcode,
+                image_url=db_product.image_url,
+                category_id=db_product.category_id,
+                created_at=db_product.created_at
+            )
         except Exception as e:
             logger.error(f"Error creating product: {str(e)}")
             await db.rollback()
@@ -128,7 +134,7 @@ class PostgresProductRepository(ProductRepository):
                 )
             return None
         except Exception as e:
-            logger.error(f"Error getting product: {str(e)}")
+            logger.error(f"Error getting product {product_id}: {str(e)}")
             raise DatabaseError(f"Failed to get product: {str(e)}")
 
     async def update(self, product_id: int, product: Product, db: AsyncSession) -> Optional[Product]:

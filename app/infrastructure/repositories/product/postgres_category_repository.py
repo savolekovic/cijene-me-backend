@@ -15,11 +15,20 @@ class PostgresCategoryRepository(CategoryRepository):
         pass
 
     async def create(self, name: str, db: AsyncSession) -> Category:
-        category_db = CategoryModel(name=name)
-        db.add(category_db)
-        await db.flush()
-        await db.commit()
-        return Category.model_validate(category_db)
+        try:
+            category_db = CategoryModel(name=name)
+            db.add(category_db)
+            await db.flush()
+            await db.commit()
+            return Category(
+                id=category_db.id,
+                name=category_db.name,
+                created_at=category_db.created_at
+            )
+        except Exception as e:
+            logger.error(f"Error creating category: {str(e)}")
+            await db.rollback()
+            raise DatabaseError(f"Failed to create category: {str(e)}")
 
     async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedCategoryResponse:
         try:
@@ -68,11 +77,21 @@ class PostgresCategoryRepository(CategoryRepository):
             raise DatabaseError(f"Failed to get categories: {str(e)}")
 
     async def get(self, category_id: int, db: AsyncSession) -> Optional[Category]:
-        result = await db.execute(
-            select(CategoryModel).where(CategoryModel.id == category_id)
-        )
-        category = result.scalar_one_or_none()
-        return Category.model_validate(category) if category else None
+        try:
+            result = await db.execute(
+                select(CategoryModel).where(CategoryModel.id == category_id)
+            )
+            category = result.scalar_one_or_none()
+            if category:
+                return Category(
+                    id=category.id,
+                    name=category.name,
+                    created_at=category.created_at
+                )
+            return None
+        except Exception as e:
+            logger.error(f"Error getting category {category_id}: {str(e)}")
+            raise DatabaseError(f"Failed to get category: {str(e)}")
 
     async def update(self, category_id: int, category: Category, db: AsyncSession) -> Optional[Category]:
         try:
@@ -84,13 +103,16 @@ class PostgresCategoryRepository(CategoryRepository):
                 category_db.name = category.name
                 await db.flush()
                 await db.commit()
-                return Category.model_validate(category_db)
-            logger.warning(f"Category not found for update: {category_id}")
+                return Category(
+                    id=category_db.id,
+                    name=category_db.name,
+                    created_at=category_db.created_at
+                )
             return None
         except Exception as e:
-            logger.error(f"Error updating category {category_id}: {str(e)}")
+            logger.error(f"Error updating category: {str(e)}")
             await db.rollback()
-            raise
+            raise DatabaseError(f"Failed to update category: {str(e)}")
 
     async def delete(self, category_id: int, db: AsyncSession) -> bool:
         result = await db.execute(
@@ -110,7 +132,13 @@ class PostgresCategoryRepository(CategoryRepository):
                 select(CategoryModel).where(CategoryModel.name.ilike(name))
             )
             category = result.scalar_one_or_none()
-            return Category.model_validate(category) if category else None
+            if category:
+                return Category(
+                    id=category.id,
+                    name=category.name,
+                    created_at=category.created_at
+                )
+            return None
         except Exception as e:
             logger.error(f"Error getting category by name: {str(e)}")
             raise DatabaseError(f"Failed to get category by name: {str(e)}")
