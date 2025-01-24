@@ -173,7 +173,16 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             select(ProductEntryModel).where(ProductEntryModel.store_brand_id == store_brand_id)
         )
         product_entry = result.scalar_one_or_none()
-        return ProductEntry.model_validate(product_entry) if product_entry else None
+        if product_entry:
+                return ProductEntry(
+                    id = product_entry.id,
+                    product_id = product_entry.product_id,
+                    store_brand_id = product_entry.store_brand_id,
+                    store_location_id = product_entry.store_location_id,
+                    price = product_entry.price,
+                    created_at = product_entry.created_at
+                )
+        return None
 
     async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductEntryResponse:
         try:
