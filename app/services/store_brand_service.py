@@ -1,3 +1,4 @@
+from app.api.responses.store import SimpleStoreBrandResponse
 from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store.store_brand import StoreBrand
@@ -81,4 +82,12 @@ class StoreBrandService:
             return True
         except Exception as e:
             logger.error(f"Error deleting store brand {store_brand_id}: {str(e)}")
+            raise
+
+    async def get_all_store_brands_simple(self, db: AsyncSession, search: str = None) -> List[SimpleStoreBrandResponse]:
+        try:
+            logger.info(f"Fetching simplified store brands list with search='{search}'")
+            return await self.store_brand_repo.get_all_simple(db, search=search)
+        except Exception as e:
+            logger.error(f"Error getting simplified store brands list: {str(e)}")
             raise 

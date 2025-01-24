@@ -3,7 +3,7 @@ from app.domain.models.auth import User
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
 from app.api.models.store import StoreBrandRequest
-from app.api.responses.store import StoreBrandResponse, PaginatedStoreBrandResponse
+from app.api.responses.store import StoreBrandResponse, PaginatedStoreBrandResponse, SimpleStoreBrandResponse
 from fastapi_cache.decorator import cache
 from app.core.config import settings
 from app.core.container import Container
@@ -11,6 +11,7 @@ from app.services.store_brand_service import StoreBrandService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.database import get_db
+from typing import List
 
 logger = get_logger(__name__)
 
@@ -66,27 +67,6 @@ async def create_store_brand(
 ):
     return await store_brand_service.create_store_brand(store_brand.name, db)
 
-@router.get("/{store_brand_id}", response_model=StoreBrandResponse,
-            responses={
-                404: {"description": "Not found",
-                      "content": {
-                        "application/json": {
-                            "example": {
-                                "error": "Not found error",
-                                "message": "Store brand not found"
-                            }
-                        }
-                    }},
-            })
-@cache(expire=settings.CACHE_TIME_LONG, namespace="store_brands")
-@inject
-async def get_store_brand(
-    store_brand_id: int,
-    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
-    db: AsyncSession = Depends(get_db)
-):
-    return await store_brand_service.get_store_brand(store_brand_id, db)
-
 @router.get("/", response_model=PaginatedStoreBrandResponse)
 @cache(expire=settings.CACHE_TIME_LONG)
 @inject
@@ -121,6 +101,70 @@ async def get_all_store_brands(
     except Exception as e:
         logger.error(f"Error getting store brands: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/simple", 
+    response_model=List[SimpleStoreBrandResponse],
+    summary="Get simplified store brands list",
+    description="Get a list of all store brands with only ID and name. Useful for dropdowns and store brand selection.",
+    responses={
+        500: {
+            "description": "Internal Server Error",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Server error",
+                        "message": "An error occurred while retrieving store brands"
+                    }
+                }
+            }
+        }
+    }
+)
+@cache(expire=settings.CACHE_TIME_LONG, namespace="store_brands")
+@inject
+async def get_all_store_brands_simple(
+    search: str = Query(None, description="Search query for filtering store brands by name"),
+    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
+    db: AsyncSession = Depends(get_db)
+) -> List[SimpleStoreBrandResponse]:
+    """
+    Get a simplified list of all store brands with optional search.
+    
+    Args:
+        search: Optional search query to filter store brands by name
+        db: Database session
+        store_brand_service: Store brand service instance
+        
+    Returns:
+        List of SimpleStoreBrandResponse containing only store brand IDs and names
+    """
+    try:
+        logger.info(f"Getting simplified store brands list - search: {search}")
+        return await store_brand_service.get_all_store_brands_simple(db, search=search)
+    except Exception as e:
+        logger.error(f"Error getting simplified store brands list: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{store_brand_id}", response_model=StoreBrandResponse,
+            responses={
+                404: {"description": "Not found",
+                      "content": {
+                        "application/json": {
+                            "example": {
+                                "error": "Not found error",
+                                "message": "Store brand not found"
+                            }
+                        }
+                    }},
+            })
+@cache(expire=settings.CACHE_TIME_LONG, namespace="store_brands")
+@inject
+async def get_store_brand(
+    store_brand_id: int,
+    store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service]),
+    db: AsyncSession = Depends(get_db)
+):
+    return await store_brand_service.get_store_brand(store_brand_id, db)
 
 @router.put("/{store_brand_id}", 
     response_model=StoreBrandResponse,

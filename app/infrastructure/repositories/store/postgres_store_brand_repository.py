@@ -6,7 +6,7 @@ from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.core.exceptions import DatabaseError, NotFoundError
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.store import StoreBrandResponse, PaginatedStoreBrandResponse
+from app.api.responses.store import StoreBrandResponse, PaginatedStoreBrandResponse, SimpleStoreBrandResponse
 
 logger = get_logger(__name__)
 
@@ -177,4 +177,33 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             return None
         except Exception as e:
             logger.error(f"Error getting store brand by name: {str(e)}")
-            raise DatabaseError(f"Failed to get store brand by name: {str(e)}") 
+            raise DatabaseError(f"Failed to get store brand by name: {str(e)}")
+
+    async def get_all_simple(self, db: AsyncSession, search: str = None) -> List[SimpleStoreBrandResponse]:
+        try:
+            # Base query
+            query = select(StoreBrandModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                query = query.where(StoreBrandModel.name.ilike(search_pattern))
+            
+            # Add ordering
+            query = query.order_by(StoreBrandModel.name)
+            
+            # Get data
+            result = await db.execute(query)
+            store_brands = result.scalars().all()
+            
+            # Convert to response model
+            return [
+                SimpleStoreBrandResponse(
+                    id=brand.id,
+                    name=brand.name
+                )
+                for brand in store_brands
+            ]
+        except Exception as e:
+            logger.error(f"Error getting simplified store brands list: {str(e)}")
+            raise DatabaseError(f"Failed to get simplified store brands list: {str(e)}") 

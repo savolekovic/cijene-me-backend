@@ -10,6 +10,13 @@ class StoreBrandResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class SimpleStoreBrandResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
 class StoreBrandInLocation(BaseModel):
     id: int
     name: str
