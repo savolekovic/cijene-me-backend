@@ -33,6 +33,13 @@ class StoreLocationResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class SimpleStoreLocationResponse(BaseModel):
+    id: int
+    address: str
+
+    class Config:
+        from_attributes = True
+
 # Use the generic PaginatedResponse with StoreBrandResponse
 PaginatedStoreBrandResponse = PaginatedResponse[StoreBrandResponse]
 

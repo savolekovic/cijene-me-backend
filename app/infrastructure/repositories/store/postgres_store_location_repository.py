@@ -7,7 +7,7 @@ from app.domain.repositories.store.store_location_repo import StoreLocationRepos
 from app.infrastructure.database.models.store import StoreBrandModel, StoreLocationModel
 from app.infrastructure.database.models.product import ProductEntryModel
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.store import StoreBrandInLocation, StoreLocationResponse, PaginatedStoreLocationResponse
+from app.api.responses.store import StoreBrandInLocation, StoreLocationResponse, PaginatedStoreLocationResponse, SimpleStoreLocationResponse
 
 logger = get_logger(__name__)
 
@@ -249,3 +249,40 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
         except Exception as e:
             logger.error(f"Error getting store locations by brand {store_brand_id}: {str(e)}")
             raise DatabaseError(f"Failed to get store locations by brand: {str(e)}")
+
+    async def get_all_simple(self, db: AsyncSession, search: str = None, store_brand_id: int = None) -> List[SimpleStoreLocationResponse]:
+        try:
+            # Base query
+            query = select(StoreLocationModel).join(StoreBrandModel)
+            
+            # Add search filter if search query is provided
+            if search:
+                search_pattern = f"%{search}%"
+                search_filter = or_(
+                    StoreLocationModel.address.ilike(search_pattern),
+                    StoreBrandModel.name.ilike(search_pattern)
+                )
+                query = query.where(search_filter)
+            
+            # Add store brand filter if provided
+            if store_brand_id:
+                query = query.where(StoreLocationModel.store_brand_id == store_brand_id)
+            
+            # Add ordering
+            query = query.order_by(StoreBrandModel.name, StoreLocationModel.address)
+            
+            # Get data
+            result = await db.execute(query)
+            locations = result.scalars().all()
+            
+            # Convert to response model
+            return [
+                SimpleStoreLocationResponse(
+                    id=location.id,
+                    address=location.address
+                )
+                for location in locations
+            ]
+        except Exception as e:
+            logger.error(f"Error getting simplified store locations list: {str(e)}")
+            raise DatabaseError(f"Failed to get simplified store locations list: {str(e)}")

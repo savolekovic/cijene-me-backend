@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from app.api.responses.store import StoreLocationResponse, PaginatedStoreLocationResponse
+from app.api.responses.store import StoreLocationResponse, PaginatedStoreLocationResponse, SimpleStoreLocationResponse
 from app.domain.models.store.store_location import StoreLocation
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.models.product import ProductEntryModel
@@ -20,6 +20,11 @@ class StoreLocationRepository(ABC):
     @abstractmethod
     async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreLocationResponse:
         """Get a paginated list of all store locations with optional search."""
+        pass
+    
+    @abstractmethod
+    async def get_all_simple(self, db: AsyncSession, search: str = None) -> List[SimpleStoreLocationResponse]:
+        """Get a simplified list of all store locations with optional search."""
         pass
     
     @abstractmethod

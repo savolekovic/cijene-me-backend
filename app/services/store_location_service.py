@@ -1,4 +1,4 @@
-from app.api.responses.store import StoreLocationResponse, PaginatedStoreLocationResponse
+from app.api.responses.store import StoreLocationResponse, PaginatedStoreLocationResponse, SimpleStoreLocationResponse
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
 from app.domain.models.store import StoreLocation
@@ -102,4 +102,12 @@ class StoreLocationService:
             return True
         except Exception as e:
             logger.error(f"Error deleting store location {location_id}: {str(e)}")
+            raise
+
+    async def get_all_store_locations_simple(self, db: AsyncSession, search: str = None, store_brand_id: int = None) -> List[SimpleStoreLocationResponse]:
+        try:
+            logger.info(f"Fetching simplified store locations list with search='{search}', store_brand_id={store_brand_id}")
+            return await self.store_location_repo.get_all_simple(db, search=search, store_brand_id=store_brand_id)
+        except Exception as e:
+            logger.error(f"Error getting simplified store locations list: {str(e)}")
             raise 
