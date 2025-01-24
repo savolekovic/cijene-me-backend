@@ -82,13 +82,13 @@ class PostgresProductRepository(ProductRepository):
             logger.error(f"Error getting all products: {str(e)}")
             raise DatabaseError(f"Failed to get all products: {str(e)}")
 
-    async def create(self, product: Product, db: AsyncSession) -> Product:
+    async def create(self, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
             db_product = ProductModel(
-                name=product.name,
-                barcode=product.barcode,
-                image_url=product.image_url,
-                category_id=product.category_id
+                name=name,
+                barcode=barcode,
+                image_url=image_url,
+                category_id=category_id
             )
             db.add(db_product)
             await db.flush()
