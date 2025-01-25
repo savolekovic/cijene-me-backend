@@ -25,10 +25,8 @@ class PostgresProductRepository(ProductRepository):
         try:
             # Base query for data
             query = (
-                select(ProductModel)
-                .options(
-                    joinedload(ProductModel.category)
-                )
+                select(ProductModel, CategoryModel)
+                .outerjoin(CategoryModel)
             )
             
             # Base query for count
@@ -58,24 +56,29 @@ class PostgresProductRepository(ProductRepository):
             
             # Get paginated data
             result = await db.execute(query)
-            products = result.unique().scalars().all()
+            products = result.all()
             
             # Convert to response model
-            product_list = [
-                ProductWithCategoryResponse(
-                    id=product[0].id,
-                    name=product[0].name,
-                    barcode=product[0].barcode,
-                    image_url=product[0].image_url,
-                    created_at=product[0].created_at,
-                    category=CategoryResponse(
-                        id=product[1].id,
-                        name=product[1].name,
-                        created_at=product[1].created_at
+            product_list = []
+            for product, category in products:
+                if not category:
+                    logger.error(f"Product {product.id} has invalid category data")
+                    continue
+                
+                product_list.append(
+                    ProductWithCategoryResponse(
+                        id=product.id,
+                        name=product.name,
+                        barcode=product.barcode,
+                        image_url=product.image_url,
+                        created_at=product.created_at,
+                        category=CategoryResponse(
+                            id=category.id,
+                            name=category.name,
+                            created_at=category.created_at
+                        )
                     )
                 )
-                for product in products
-            ]
             
             return PaginatedProductResponse(
                 total_count=total_count,
