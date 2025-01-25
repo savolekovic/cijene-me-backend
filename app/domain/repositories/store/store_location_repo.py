@@ -18,8 +18,17 @@ class StoreLocationRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreLocationResponse:
-        """Get a paginated list of all store locations with optional search."""
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "address", order_direction: str = "asc") -> PaginatedStoreLocationResponse:
+        """Get a paginated list of all store locations with optional search and ordering.
+        
+        Args:
+            db: Database session
+            page: Page number (default: 1)
+            per_page: Number of items per page (default: 10)
+            search: Optional search query to filter locations by address
+            order_by: Field to order by (default: address)
+            order_direction: Order direction (asc or desc) (default: asc)
+        """
         pass
     
     @abstractmethod

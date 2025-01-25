@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, asc, func, or_
+from sqlalchemy import select, asc, func, or_, desc
 from typing import List, Optional
 from app.core.exceptions import DatabaseError
 from app.domain.models.store.store_location import StoreLocation
@@ -90,7 +90,7 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             logger.error(f"Error getting store location: {str(e)}")
             raise DatabaseError(f"Failed to get store location: {str(e)}")
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreLocationResponse:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "address", order_direction: str = "asc") -> PaginatedStoreLocationResponse:
         try:
             # Base query for data
             query = (
@@ -118,8 +118,18 @@ class PostgresStoreLocationRepository(StoreLocationRepository):
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
             total_count = count_result.scalar()
             
-            # Add ordering and pagination to the main query
-            query = query.order_by(StoreBrandModel.name, StoreLocationModel.address)
+            # Add ordering
+            if order_by == "store_brand":
+                order_column = StoreBrandModel.name
+            else:
+                order_column = getattr(StoreLocationModel, order_by, StoreLocationModel.address)
+            
+            if order_direction.lower() == "desc":
+                query = query.order_by(desc(order_column))
+            else:
+                query = query.order_by(asc(order_column))
+            
+            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             

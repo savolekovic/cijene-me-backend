@@ -127,16 +127,20 @@ async def get_all_store_locations(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering locations by address or brand name"),
+    order_by: str = Query("address", description="Field to order by (address, created_at, store_brand)"),
+    order_direction: str = Query("asc", description="Order direction (asc or desc)"),
     db: AsyncSession = Depends(get_db),
     store_location_service: StoreLocationService = Depends(Provide[Container.store_location_service])
 ) -> PaginatedStoreLocationResponse:
     """
-    Get all store locations with pagination and optional search.
+    Get all store locations with pagination, optional search, and ordering.
     
     Args:
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter locations by address or brand name
+        order_by: Field to order by (default: address)
+        order_direction: Order direction (asc or desc) (default: asc)
         db: Database session
         store_location_service: Store location service instance
         
@@ -144,18 +148,18 @@ async def get_all_store_locations(
         PaginatedStoreLocationResponse containing the paginated list of store locations
     """
     try:
-        logger.info(f"Getting store locations - page: {page}, per_page: {per_page}, search: {search}")
+        logger.info(f"Getting store locations - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
         return await store_location_service.get_all_store_locations(
             db=db,
             page=page,
             per_page=per_page,
-            search=search
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
         )
     except Exception as e:
         logger.error(f"Error getting store locations: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
 
 @router.get("/{location_id}", response_model=StoreLocationResponse,
             responses={

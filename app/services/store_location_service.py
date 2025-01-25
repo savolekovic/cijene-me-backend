@@ -31,10 +31,17 @@ class StoreLocationService:
             logger.error(f"Error creating store location: {str(e)}")
             raise
 
-    async def get_all_store_locations(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreLocationResponse:
+    async def get_all_store_locations(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "address", order_direction: str = "asc") -> PaginatedStoreLocationResponse:
         try:
-            logger.info(f"Fetching store locations with pagination (page={page}, per_page={per_page}) and search='{search}'")
-            return await self.store_location_repo.get_all(db, page=page, per_page=per_page, search=search)
+            logger.info(f"Fetching store locations with pagination (page={page}, per_page={per_page}), search='{search}', order_by={order_by}, order_direction={order_direction}")
+            return await self.store_location_repo.get_all(
+                db,
+                page=page,
+                per_page=per_page,
+                search=search,
+                order_by=order_by,
+                order_direction=order_direction
+            )
         except Exception as e:
             logger.error(f"Error fetching store locations: {str(e)}")
             raise
