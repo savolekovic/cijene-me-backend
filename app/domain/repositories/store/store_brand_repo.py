@@ -16,8 +16,8 @@ class StoreBrandRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreBrandResponse:
-        """Get a paginated list of all store brands with optional search."""
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedStoreBrandResponse:
+        """Get a paginated list of all store brands with optional search and ordering."""
         pass
     
     @abstractmethod

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc, asc
 from typing import List, Optional
 from app.domain.models.store.store_brand import StoreBrand
 from app.domain.repositories.store.store_brand_repo import StoreBrandRepository
@@ -102,7 +102,7 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             await db.rollback()
             raise DatabaseError(f"Failed to delete store brand: {str(e)}")
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreBrandResponse:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedStoreBrandResponse:
         try:
             # Base query for data
             query = select(StoreBrandModel)
@@ -121,8 +121,14 @@ class PostgresStoreBrandRepository(StoreBrandRepository):
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
             total_count = count_result.scalar()
             
-            # Add ordering and pagination to the main query
-            query = query.order_by(StoreBrandModel.name)
+            # Add ordering
+            order_column = getattr(StoreBrandModel, order_by, StoreBrandModel.name)
+            if order_direction.lower() == "desc":
+                query = query.order_by(desc(order_column))
+            else:
+                query = query.order_by(asc(order_column))
+            
+            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             

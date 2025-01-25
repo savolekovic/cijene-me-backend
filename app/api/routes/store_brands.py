@@ -74,6 +74,8 @@ async def get_all_store_brands(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering brands by name"),
+    order_by: str = Query("name", description="Field to order by (name, created_at)"),
+    order_direction: str = Query("asc", description="Order direction (asc or desc)"),
     db: AsyncSession = Depends(get_db),
     store_brand_service: StoreBrandService = Depends(Provide[Container.store_brand_service])
 ) -> PaginatedStoreBrandResponse:
@@ -84,6 +86,8 @@ async def get_all_store_brands(
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter brands by name
+        order_by: Field to order by (default: name)
+        order_direction: Order direction (asc or desc) (default: asc)
         db: Database session
         store_brand_service: Store brand service instance
         
@@ -91,12 +95,14 @@ async def get_all_store_brands(
         PaginatedStoreBrandResponse containing the paginated list of store brands
     """
     try:
-        logger.info(f"Getting store brands - page: {page}, per_page: {per_page}, search: {search}")
+        logger.info(f"Getting store brands - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
         return await store_brand_service.get_all_store_brands(
             db=db,
             page=page,
             per_page=per_page,
-            search=search
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
         )
     except Exception as e:
         logger.error(f"Error getting store brands: {str(e)}")

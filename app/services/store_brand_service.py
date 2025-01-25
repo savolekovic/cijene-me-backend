@@ -37,10 +37,17 @@ class StoreBrandService:
             logger.error(f"Error fetching store brand {store_brand_id}: {str(e)}")
             raise
 
-    async def get_all_store_brands(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedStoreBrandResponse:
+    async def get_all_store_brands(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedStoreBrandResponse:
         try:
-            logger.info(f"Fetching store brands with pagination (page={page}, per_page={per_page}) and search='{search}'")
-            return await self.store_brand_repo.get_all(db, page=page, per_page=per_page, search=search)
+            logger.info(f"Fetching store brands with pagination (page={page}, per_page={per_page}), search='{search}', order_by={order_by}, order_direction={order_direction}")
+            return await self.store_brand_repo.get_all(
+                db=db,
+                page=page,
+                per_page=per_page,
+                search=search,
+                order_by=order_by,
+                order_direction=order_direction
+            )
         except Exception as e:
             logger.error(f"Error fetching store brands: {str(e)}")
             raise
