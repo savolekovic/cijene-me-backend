@@ -2,7 +2,6 @@ from app.api.responses.product_entry import ProductEntryWithDetails, PaginatedPr
 from app.domain.repositories.product.product_entry_repo import ProductEntryRepository
 from app.domain.repositories.store.store_location_repo import StoreLocationRepository
 from app.services.cache_service import CacheManager
-from app.domain.models.product import ProductEntry
 from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError
 from typing import List
@@ -55,7 +54,9 @@ class ProductEntryService:
         db: AsyncSession, 
         page: int = 1, 
         per_page: int = 10,
-        search: str = None
+        search: str = None,
+        order_by: str = "created_at",
+        order_direction: str = "desc"
     ) -> PaginatedProductEntryResponse:
         """
         Get all product entries with pagination and optional search.
@@ -65,12 +66,21 @@ class ProductEntryService:
             page: Page number (default: 1)
             per_page: Number of items per page (default: 10)
             search: Optional search query
+            order_by: Field to order by (default: created_at)
+            order_direction: Order direction (asc or desc) (default: desc)
             
         Returns:
             PaginatedProductEntryResponse containing the paginated list of product entries
         """
-        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}")
-        return await self.product_entry_repo.get_all(db, page=page, per_page=per_page, search=search)
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
+        return await self.product_entry_repo.get_all(
+            db=db, 
+            page=page, 
+            per_page=per_page, 
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
+        )
 
     async def get_entry(self, entry_id: int, db: AsyncSession) -> ProductEntryWithDetails:
         try:

@@ -80,6 +80,8 @@ async def get_all_product_entries(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering entries"),
+    order_by: str = Query("created_at", description="Field to order by (created_at, price)"),
+    order_direction: str = Query("desc", description="Order direction (asc or desc)"),
     db: AsyncSession = Depends(get_db),
     product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ) -> PaginatedProductEntryResponse:
@@ -90,6 +92,8 @@ async def get_all_product_entries(
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter entries
+        order_by: Field to order by (default: created_at)
+        order_direction: Order direction (asc or desc) (default: desc)
         db: Database session
         product_entry_service: Product entry service instance
         
@@ -97,12 +101,14 @@ async def get_all_product_entries(
         PaginatedProductEntryResponse containing the paginated list of product entries
     """
     try:
-        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}")
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
         return await product_entry_service.get_all_product_entries(
             db=db,
             page=page,
             per_page=per_page,
-            search=search
+            search=search,
+            order_by=order_by,
+            order_direction=order_direction
         )
     except Exception as e:
         logger.error(f"Error getting product entries: {str(e)}")

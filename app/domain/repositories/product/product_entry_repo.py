@@ -18,8 +18,8 @@ class ProductEntryRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductEntryResponse:
-        """Get a paginated list of all product entries with optional search."""
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "created_at", order_direction: str = "desc") -> PaginatedProductEntryResponse:
+        """Get a paginated list of all product entries with optional search and ordering."""
         pass
     
     @abstractmethod

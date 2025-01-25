@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc, func, or_, and_
+from sqlalchemy import select, desc, func, or_, and_, asc
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
 from decimal import Decimal
@@ -185,14 +185,13 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 )
         return None
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None) -> PaginatedProductEntryResponse:
+    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "created_at", order_direction: str = "desc") -> PaginatedProductEntryResponse:
         try:
             # Base query for data
             query = (
                 select(ProductEntryModel)
                 .options(
-                    joinedload(ProductEntryModel.product)
-                    .joinedload(ProductModel.category, innerjoin=True),
+                    joinedload(ProductEntryModel.product),
                     joinedload(ProductEntryModel.store_location)
                     .joinedload(StoreLocationModel.store_brand)
                 )
@@ -224,8 +223,14 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
             total_count = count_result.scalar()
             
-            # Add ordering and pagination to the main query
-            query = query.order_by(desc(ProductEntryModel.created_at))
+            # Add ordering
+            order_column = getattr(ProductEntryModel, order_by, ProductEntryModel.created_at)
+            if order_direction.lower() == "desc":
+                query = query.order_by(desc(order_column))
+            else:
+                query = query.order_by(asc(order_column))
+            
+            # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
