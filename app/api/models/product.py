@@ -1,7 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
 from app.core.exceptions import ValidationError
-from fastapi import UploadFile
-import re
 
 class ProductRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)

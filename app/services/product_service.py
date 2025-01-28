@@ -89,11 +89,11 @@ class ProductService:
             logger.error(f"Error fetching product {product_id}: {str(e)}")
             raise
 
-    async def update_product(self, product_id: int, name: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
+    async def update_product(self, product_id: int, name: str, barcode: str, image_url: str, category_id: int, db: AsyncSession) -> Product:
         try:
             logger.info(f"Updating product {product_id} with name: {name}")
             
-            # Get existing product to preserve barcode
+            # Get existing product
             existing_product = await self.product_repo.get(product_id, db)
             if not existing_product:
                 logger.warning(f"Product not found for update: {product_id}")
@@ -106,15 +106,21 @@ class ProductService:
                 raise NotFoundError("Category", category_id)
             
             # Check if another product with same name exists (excluding current product)
-            existing_product = await self.product_repo.get_by_name(name, db)
-            if existing_product and existing_product.id != product_id:
+            name_check = await self.product_repo.get_by_name(name, db)
+            if name_check and name_check.id != product_id:
                 logger.error(f"Another product with name {name} already exists")
                 raise ValidationError(f"Product with name '{name}' already exists")
+            
+            # Check if another product with same barcode exists (excluding current product)
+            barcode_check = await self.product_repo.get_by_barcode(barcode, db)
+            if barcode_check and barcode_check.id != product_id:
+                logger.error(f"Another product with barcode {barcode} already exists")
+                raise ValidationError(f"Product with barcode '{barcode}' already exists")
             
             product = Product(
                 id=product_id,
                 name=name,
-                barcode=existing_product.barcode,
+                barcode=barcode,
                 image_url=image_url,
                 category_id=category_id
             )

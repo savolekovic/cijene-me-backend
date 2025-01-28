@@ -6,7 +6,6 @@ from app.infrastructure.database.database import get_db
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
 from app.api.responses.product import PaginatedProductResponse, SimpleProductResponse
-from app.api.models.product import ProductRequest
 from fastapi_cache.decorator import cache
 from app.core.config import settings
 from app.core.container import Container
