@@ -5,7 +5,7 @@ from app.domain.models.auth import User
 from app.infrastructure.database.database import get_db
 from app.api.dependencies.auth import get_current_privileged_user
 from app.infrastructure.logging.logger import get_logger
-from app.api.responses.product import PaginatedProductResponse, SimpleProductResponse
+from app.api.responses.product import PaginatedProductResponse, SimpleProductResponse, ProductWithCategoryResponse
 from fastapi_cache.decorator import cache
 from app.core.config import settings
 from app.core.container import Container
@@ -236,18 +236,19 @@ async def get_all_products_simple(
         logger.error(f"Error getting simplified products list: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{product_id}", response_model=Product,
-            responses={
-                404: {"description": "Not found",
-                      "content": {
-                        "application/json": {
-                            "example": {
-                                "error": "Not found error",
-                                "message": "Product not found"
-                            }
-                        }
-                    }},
-            })
+@router.get("/{product_id}", 
+    response_model=ProductWithCategoryResponse,
+    responses={
+        404: {"description": "Not found",
+              "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Product not found"
+                    }
+                }
+            }},
+    })
 @cache(expire=settings.CACHE_TIME_MEDIUM)
 @inject
 async def get_product(
