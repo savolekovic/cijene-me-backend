@@ -13,6 +13,7 @@ from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.database import get_db
 from app.api.responses.product_entry import ProductEntryWithDetails, PaginatedProductEntryResponse
+from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -81,35 +82,58 @@ async def get_all_product_entries(
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering entries"),
     product_id: int = Query(None, description="Filter entries by product ID"),
+    store_brand_id: int = Query(None, description="Filter entries by store brand ID"),
+    store_location_id: int = Query(None, description="Filter entries by store location ID"),
+    min_price: float = Query(None, ge=0, description="Minimum price filter"),
+    max_price: float = Query(None, ge=0, description="Maximum price filter"),
+    from_date: datetime = Query(None, description="Filter entries from this date"),
+    to_date: datetime = Query(None, description="Filter entries until this date"),
     order_by: str = Query("created_at", description="Field to order by (created_at, price)"),
     order_direction: str = Query("desc", description="Order direction (asc or desc)"),
     db: AsyncSession = Depends(get_db),
     product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service])
 ) -> PaginatedProductEntryResponse:
     """
-    Get all product entries with pagination and optional search.
+    Get all product entries with pagination and filtering options.
     
     Args:
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter entries
         product_id: Optional product ID to filter entries
+        store_brand_id: Optional store brand ID to filter entries
+        store_location_id: Optional store location ID to filter entries
+        min_price: Optional minimum price filter
+        max_price: Optional maximum price filter
+        from_date: Optional start date filter
+        to_date: Optional end date filter
         order_by: Field to order by (default: created_at)
         order_direction: Order direction (asc or desc) (default: desc)
         db: Database session
         product_entry_service: Product entry service instance
         
     Returns:
-        PaginatedProductEntryResponse containing the paginated list of product entries
+        PaginatedProductEntryResponse containing the filtered and paginated list of product entries
     """
     try:
-        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, product_id: {product_id}, order_by: {order_by}, order_direction: {order_direction}")
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, " +
+                   f"product_id: {product_id}, store_brand_id: {store_brand_id}, " +
+                   f"store_location_id: {store_location_id}, min_price: {min_price}, " +
+                   f"max_price: {max_price}, from_date: {from_date}, to_date: {to_date}, " +
+                   f"order_by: {order_by}, order_direction: {order_direction}")
+        
         return await product_entry_service.get_all_product_entries(
             db=db,
             page=page,
             per_page=per_page,
             search=search,
             product_id=product_id,
+            store_brand_id=store_brand_id,
+            store_location_id=store_location_id,
+            min_price=min_price,
+            max_price=max_price,
+            from_date=from_date,
+            to_date=to_date,
             order_by=order_by,
             order_direction=order_direction
         )

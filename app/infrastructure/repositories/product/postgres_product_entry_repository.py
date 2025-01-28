@@ -18,6 +18,7 @@ from app.api.responses.product_entry import (
     StoreLocationInEntry,
     PaginatedProductEntryResponse
 )
+from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -190,8 +191,14 @@ class PostgresProductEntryRepository(ProductEntryRepository):
         db: AsyncSession, 
         page: int = 1, 
         per_page: int = 10, 
-        search: str = None, 
+        search: str = None,
         product_id: int = None,
+        store_brand_id: int = None,
+        store_location_id: int = None,
+        min_price: float = None,
+        max_price: float = None,
+        from_date: datetime = None,
+        to_date: datetime = None,
         order_by: str = "created_at", 
         order_direction: str = "desc"
     ) -> PaginatedProductEntryResponse:
@@ -214,6 +221,38 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 product_filter = ProductEntryModel.product_id == product_id
                 query = query.where(product_filter)
                 count_query = count_query.where(product_filter)
+            
+            # Add store_brand_id filter if provided
+            if store_brand_id is not None:
+                store_brand_filter = ProductEntryModel.store_brand_id == store_brand_id
+                query = query.where(store_brand_filter)
+                count_query = count_query.where(store_brand_filter)
+            
+            # Add store_location_id filter if provided
+            if store_location_id is not None:
+                store_location_filter = ProductEntryModel.store_location_id == store_location_id
+                query = query.where(store_location_filter)
+                count_query = count_query.where(store_location_filter)
+            
+            # Add price range filters if provided
+            if min_price is not None:
+                price_min_filter = ProductEntryModel.price >= min_price
+                query = query.where(price_min_filter)
+                count_query = count_query.where(price_min_filter)
+            if max_price is not None:
+                price_max_filter = ProductEntryModel.price <= max_price
+                query = query.where(price_max_filter)
+                count_query = count_query.where(price_max_filter)
+            
+            # Add date range filters if provided
+            if from_date is not None:
+                date_from_filter = ProductEntryModel.created_at >= from_date
+                query = query.where(date_from_filter)
+                count_query = count_query.where(date_from_filter)
+            if to_date is not None:
+                date_to_filter = ProductEntryModel.created_at <= to_date
+                query = query.where(date_to_filter)
+                count_query = count_query.where(date_to_filter)
             
             # Add search filter if search query is provided
             if search:
@@ -263,7 +302,7 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 entry_list.append(
                     ProductEntryWithDetails(
                         id=entry.id,
-                        price=entry.price,
+                        price=float(entry.price),
                         created_at=entry.created_at,
                         product=ProductInEntry(
                             id=entry.product.id,

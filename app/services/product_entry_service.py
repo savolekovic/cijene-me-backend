@@ -8,6 +8,7 @@ from typing import List
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.repositories.product.postgres_product_entry_repository import PostgresProductEntryRepository
+from datetime import datetime
 
 logger = get_logger(__name__)
 
@@ -56,31 +57,54 @@ class ProductEntryService:
         per_page: int = 10,
         search: str = None,
         product_id: int = None,
+        store_brand_id: int = None,
+        store_location_id: int = None,
+        min_price: float = None,
+        max_price: float = None,
+        from_date: datetime = None,
+        to_date: datetime = None,
         order_by: str = "created_at",
         order_direction: str = "desc"
     ) -> PaginatedProductEntryResponse:
         """
-        Get all product entries with pagination and optional search.
+        Get all product entries with pagination and filtering options.
         
         Args:
             db: Database session
             page: Page number (default: 1)
             per_page: Number of items per page (default: 10)
             search: Optional search query
-            product_id: Optional product ID to filter entries
+            product_id: Optional product ID filter
+            store_brand_id: Optional store brand ID filter
+            store_location_id: Optional store location ID filter
+            min_price: Optional minimum price filter
+            max_price: Optional maximum price filter
+            from_date: Optional start date filter
+            to_date: Optional end date filter
             order_by: Field to order by (default: created_at)
             order_direction: Order direction (asc or desc) (default: desc)
             
         Returns:
-            PaginatedProductEntryResponse containing the paginated list of product entries
+            PaginatedProductEntryResponse containing the filtered and paginated list of product entries
         """
-        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, product_id: {product_id}, order_by: {order_by}, order_direction: {order_direction}")
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, " +
+                   f"product_id: {product_id}, store_brand_id: {store_brand_id}, " +
+                   f"store_location_id: {store_location_id}, min_price: {min_price}, " +
+                   f"max_price: {max_price}, from_date: {from_date}, to_date: {to_date}, " +
+                   f"order_by: {order_by}, order_direction: {order_direction}")
+        
         return await self.product_entry_repo.get_all(
             db=db, 
             page=page, 
             per_page=per_page, 
             search=search,
             product_id=product_id,
+            store_brand_id=store_brand_id,
+            store_location_id=store_location_id,
+            min_price=min_price,
+            max_price=max_price,
+            from_date=from_date,
+            to_date=to_date,
             order_by=order_by,
             order_direction=order_direction
         )
