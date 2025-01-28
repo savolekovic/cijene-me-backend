@@ -14,6 +14,7 @@ from app.services.product_service import ProductService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.utils.file_upload import save_upload_file, delete_upload_file
+from pydantic import ValidationError
 
 logger = get_logger(__name__)
 
@@ -292,36 +293,95 @@ async def get_product(
     },
     openapi_extra={
         "security": [{"Bearer": []}],
-        "responses": {"422": None,}
+        "responses": {"422": None,},
+        "requestBody": {
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "example": "Jagodica"
+                            },
+                            "barcode": {
+                                "type": "string",
+                                "example": "12345670"
+                            },
+                            "category_id": {
+                                "type": "integer",
+                                "example": 4
+                            },
+                            "image": {
+                                "type": "string",
+                                "format": "binary",
+                                "description": "Product image file (JPEG, PNG, or GIF)"
+                            }
+                        },
+                        "required": ["name", "barcode", "category_id"]
+                    }
+                },
+                "application/json": {
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "example": "Jagodica"
+                            },
+                            "barcode": {
+                                "type": "string",
+                                "example": "12345670"
+                            },
+                            "category_id": {
+                                "type": "integer",
+                                "example": 4
+                            }
+                        },
+                        "required": ["name", "barcode", "category_id"]
+                    }
+                }
+            }
+        }
     }
 )
 @inject
 async def update_product(
     product_id: int,
-    product: ProductRequest,
-    image: UploadFile | None = None,
+    name: str = Form(..., description="Product name"),
+    barcode: str = Form(..., description="Product barcode"),
+    category_id: int = Form(..., description="Category ID"),
+    image: UploadFile | None = File(None, description="Product image (JPEG, PNG, or GIF)"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_privileged_user),
     product_service: ProductService = Depends(Provide[Container.product_service])
 ):
-    # Get existing product to handle image update
-    existing_product = await product_service.get_product(product_id, db)
-    
-    # Handle image update
-    image_path = existing_product.image_url
-    if image:
-        # Delete old image if it exists
-        await delete_upload_file(existing_product.image_url)
-        # Save new image
-        image_path = await save_upload_file(image)
-    
-    return await product_service.update_product(
-        product_id=product_id,
-        name=product.name,
-        image_url=image_path,
-        category_id=product.category_id,
-        db=db
-    )
+    try:
+        # Get existing product to handle image update
+        existing_product = await product_service.get_product(product_id, db)
+        
+        # Handle image update only if a new image is provided
+        image_path = existing_product.image_url
+        if image:
+            # Delete old image if it exists
+            await delete_upload_file(existing_product.image_url)
+            # Save new image
+            image_path = await save_upload_file(image)
+        
+        return await product_service.update_product(
+            product_id=product_id,
+            name=name,
+            barcode=barcode,
+            image_url=image_path,
+            category_id=category_id,
+            db=db
+        )
+    except ValidationError as e:
+        logger.error(f"Validation error updating product: {str(e)}")
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating product: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{product_id}",
     summary="Delete a product",
