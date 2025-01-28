@@ -185,7 +185,16 @@ class PostgresProductEntryRepository(ProductEntryRepository):
                 )
         return None
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "created_at", order_direction: str = "desc") -> PaginatedProductEntryResponse:
+    async def get_all(
+        self, 
+        db: AsyncSession, 
+        page: int = 1, 
+        per_page: int = 10, 
+        search: str = None, 
+        product_id: int = None,
+        order_by: str = "created_at", 
+        order_direction: str = "desc"
+    ) -> PaginatedProductEntryResponse:
         try:
             # Base query for data
             query = (
@@ -199,6 +208,12 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             
             # Base query for count
             count_query = select(ProductEntryModel)
+            
+            # Add product_id filter if provided
+            if product_id is not None:
+                product_filter = ProductEntryModel.product_id == product_id
+                query = query.where(product_filter)
+                count_query = count_query.where(product_filter)
             
             # Add search filter if search query is provided
             if search:

@@ -55,6 +55,7 @@ class ProductEntryService:
         page: int = 1, 
         per_page: int = 10,
         search: str = None,
+        product_id: int = None,
         order_by: str = "created_at",
         order_direction: str = "desc"
     ) -> PaginatedProductEntryResponse:
@@ -66,18 +67,20 @@ class ProductEntryService:
             page: Page number (default: 1)
             per_page: Number of items per page (default: 10)
             search: Optional search query
+            product_id: Optional product ID to filter entries
             order_by: Field to order by (default: created_at)
             order_direction: Order direction (asc or desc) (default: desc)
             
         Returns:
             PaginatedProductEntryResponse containing the paginated list of product entries
         """
-        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
+        logger.info(f"Getting product entries - page: {page}, per_page: {per_page}, search: {search}, product_id: {product_id}, order_by: {order_by}, order_direction: {order_direction}")
         return await self.product_entry_repo.get_all(
             db=db, 
             page=page, 
             per_page=per_page, 
             search=search,
+            product_id=product_id,
             order_by=order_by,
             order_direction=order_direction
         )
