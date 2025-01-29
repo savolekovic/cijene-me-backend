@@ -7,7 +7,7 @@ from app.infrastructure.logging.logger import get_logger
 from app.core.exceptions import NotFoundError, ValidationError
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.responses.product import ProductWithCategoryResponse, SimpleProductResponse
+from app.api.responses.product import PaginatedProductResponse, ProductWithCategoryResponse, SimpleProductResponse
 from sqlalchemy.exc import DBAPIError, InterfaceError
 import asyncio
 
