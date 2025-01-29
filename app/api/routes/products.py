@@ -138,7 +138,7 @@ async def create_product(
 @router.get("/", 
     response_model=PaginatedProductResponse,
     summary="Get all products",
-    description="Get a paginated list of all products with optional search and ordering.",
+    description="Get a paginated list of all products with optional search, filtering and ordering.",
     responses={
         500: {
             "description": "Internal Server Error",
@@ -159,33 +159,52 @@ async def get_all_products(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     search: str = Query(None, description="Search query for filtering products by name"),
+    category_id: int = Query(None, description="Filter products by category ID"),
+    has_entries: bool = Query(None, description="Filter products that have (true) or don't have (false) price entries"),
+    min_price: float = Query(None, ge=0, description="Filter products by minimum current price"),
+    max_price: float = Query(None, ge=0, description="Filter products by maximum current price"),
+    barcode: str = Query(None, description="Filter by exact barcode match"),
     order_by: str = Query("name", description="Field to order by (name, barcode, created_at)"),
     order_direction: str = Query("asc", description="Order direction (asc or desc)"),
     product_service: ProductService = Depends(Provide[Container.product_service]),
     db: AsyncSession = Depends(get_db)
 ) -> PaginatedProductResponse:
     """
-    Get all products with pagination and optional search.
+    Get all products with pagination, filtering and optional search.
     
     Args:
         page: Page number (default: 1)
         per_page: Number of items per page (default: 10, max: 100)
         search: Optional search query to filter products by name
+        category_id: Optional category ID to filter products
+        has_entries: Filter products that have or don't have price entries
+        min_price: Minimum current price filter
+        max_price: Maximum current price filter
+        barcode: Filter by exact barcode match
         order_by: Field to order by (default: name)
         order_direction: Order direction (asc or desc) (default: asc)
         db: Database session
         product_service: Product service instance
         
     Returns:
-        PaginatedProductResponse containing the paginated list of products
+        PaginatedProductResponse containing the filtered and paginated list of products
     """
     try:
-        logger.info(f"Getting products - page: {page}, per_page: {per_page}, search: {search}, order_by: {order_by}, order_direction: {order_direction}")
+        logger.info(f"Getting products - page: {page}, per_page: {per_page}, search: {search}, " +
+                   f"category_id: {category_id}, has_entries: {has_entries}, " +
+                   f"min_price: {min_price}, max_price: {max_price}, barcode: {barcode}, " +
+                   f"order_by: {order_by}, order_direction: {order_direction}")
+        
         return await product_service.get_all_products(
             db=db,
             page=page,
             per_page=per_page,
             search=search,
+            category_id=category_id,
+            has_entries=has_entries,
+            min_price=min_price,
+            max_price=max_price,
+            barcode=barcode,
             order_by=order_by,
             order_direction=order_direction
         )

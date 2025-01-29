@@ -49,33 +49,61 @@ class ProductService:
             logger.error(f"Error creating product: {str(e)}")
             raise
 
-    async def get_all_products(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> List[ProductWithCategoryResponse]:
-        max_retries = 3
-        retry_delay = 1  # seconds
+    async def get_all_products(
+        self, 
+        db: AsyncSession, 
+        page: int = 1, 
+        per_page: int = 10, 
+        search: str = None,
+        category_id: int = None,
+        has_entries: bool = None,
+        min_price: float = None,
+        max_price: float = None,
+        barcode: str = None,
+        order_by: str = "name",
+        order_direction: str = "asc"
+    ) -> PaginatedProductResponse:
+        """
+        Get all products with pagination and filtering options.
         
-        for attempt in range(max_retries):
-            try:
-                logger.info(f"Fetching products with pagination (page={page}, per_page={per_page}), search='{search}', order_by={order_by}, order_direction={order_direction}")
-                return await self.product_repo.get_all(
-                    db=db,
-                    page=page,
-                    per_page=per_page,
-                    search=search,
-                    order_by=order_by,
-                    order_direction=order_direction
-                )
-            except (DBAPIError, InterfaceError) as e:
-                if attempt == max_retries - 1:
-                    logger.error(f"Failed to fetch products after {max_retries} attempts: {e}")
-                    raise
-                logger.warning(f"Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
-                await asyncio.sleep(retry_delay)
-                # Create new session if needed
-                if not db.is_active:
-                    db = AsyncSessionLocal()
-            except Exception as e:
-                logger.error(f"Error getting all products: {str(e)}")
-                raise
+        Args:
+            db: Database session
+            page: Page number (default: 1)
+            per_page: Number of items per page (default: 10)
+            search: Optional search query
+            category_id: Optional category ID filter
+            has_entries: Filter products that have/don't have price entries
+            min_price: Minimum current price filter
+            max_price: Maximum current price filter
+            barcode: Filter by exact barcode match
+            order_by: Field to order by (default: name)
+            order_direction: Order direction (asc or desc) (default: asc)
+            
+        Returns:
+            PaginatedProductResponse containing the filtered and paginated list of products
+        """
+        try:
+            logger.info(f"Getting products with pagination (page={page}, per_page={per_page}), " +
+                       f"search='{search}', category_id={category_id}, has_entries={has_entries}, " +
+                       f"min_price={min_price}, max_price={max_price}, barcode={barcode}, " +
+                       f"order_by={order_by}, order_direction={order_direction}")
+            
+            return await self.product_repo.get_all(
+                db=db,
+                page=page,
+                per_page=per_page,
+                search=search,
+                category_id=category_id,
+                has_entries=has_entries,
+                min_price=min_price,
+                max_price=max_price,
+                barcode=barcode,
+                order_by=order_by,
+                order_direction=order_direction
+            )
+        except Exception as e:
+            logger.error(f"Error getting products: {str(e)}")
+            raise
 
     async def get_product(self, product_id: int, db: AsyncSession) -> ProductWithCategoryResponse:
         try:

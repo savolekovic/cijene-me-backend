@@ -10,8 +10,35 @@ class ProductRepository(ABC):
         pass
 
     @abstractmethod
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedProductResponse:
-        """Get a paginated list of all products with optional search and ordering."""
+    async def get_all(
+        self, 
+        db: AsyncSession, 
+        page: int = 1, 
+        per_page: int = 10, 
+        search: str = None,
+        category_id: int = None,
+        has_entries: bool = None,
+        min_price: float = None,
+        max_price: float = None,
+        barcode: str = None,
+        order_by: str = "name", 
+        order_direction: str = "asc"
+    ) -> PaginatedProductResponse:
+        """Get a paginated list of all products with optional search, filtering and ordering.
+        
+        Args:
+            db: Database session
+            page: Page number (default: 1)
+            per_page: Number of items per page (default: 10)
+            search: Optional search query
+            category_id: Optional category ID filter
+            has_entries: Filter products that have/don't have price entries
+            min_price: Minimum current price filter
+            max_price: Maximum current price filter
+            barcode: Filter by exact barcode match
+            order_by: Field to order by (default: name)
+            order_direction: Order direction (asc or desc) (default: asc)
+        """
         pass
 
     @abstractmethod

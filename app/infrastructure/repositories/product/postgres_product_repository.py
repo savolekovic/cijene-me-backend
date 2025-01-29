@@ -21,7 +21,20 @@ class PostgresProductRepository(ProductRepository):
     def __init__(self, session: AsyncSession = None):
         self.session = session
 
-    async def get_all(self, db: AsyncSession, page: int = 1, per_page: int = 10, search: str = None, order_by: str = "name", order_direction: str = "asc") -> PaginatedProductResponse:
+    async def get_all(
+        self, 
+        db: AsyncSession, 
+        page: int = 1, 
+        per_page: int = 10, 
+        search: str = None,
+        category_id: int = None,
+        has_entries: bool = None,
+        min_price: float = None,
+        max_price: float = None,
+        barcode: str = None,
+        order_by: str = "name", 
+        order_direction: str = "asc"
+    ) -> PaginatedProductResponse:
         try:
             # Base query for data
             query = (
@@ -38,6 +51,56 @@ class PostgresProductRepository(ProductRepository):
                 search_filter = ProductModel.name.ilike(search_pattern)
                 query = query.where(search_filter)
                 count_query = count_query.where(search_filter)
+
+            # Add category filter if provided
+            if category_id is not None:
+                category_filter = ProductModel.category_id == category_id
+                query = query.where(category_filter)
+                count_query = count_query.where(category_filter)
+
+            # Add barcode filter if provided
+            if barcode:
+                barcode_filter = ProductModel.barcode == barcode
+                query = query.where(barcode_filter)
+                count_query = count_query.where(barcode_filter)
+
+            # Add price range filters if provided
+            if min_price is not None or max_price is not None or has_entries is not None:
+                # Subquery to get latest price for each product
+                latest_prices = (
+                    select(
+                        ProductEntryModel.product_id,
+                        func.max(ProductEntryModel.created_at).label('latest_date'),
+                        ProductEntryModel.price.label('current_price')
+                    )
+                    .group_by(ProductEntryModel.product_id, ProductEntryModel.price)
+                    .alias('latest_prices')
+                )
+
+                query = query.outerjoin(
+                    latest_prices,
+                    ProductModel.id == latest_prices.c.product_id
+                )
+                count_query = count_query.outerjoin(
+                    latest_prices,
+                    ProductModel.id == latest_prices.c.product_id
+                )
+
+                if has_entries is not None:
+                    if has_entries:
+                        query = query.where(latest_prices.c.product_id.isnot(None))
+                        count_query = count_query.where(latest_prices.c.product_id.isnot(None))
+                    else:
+                        query = query.where(latest_prices.c.product_id.is_(None))
+                        count_query = count_query.where(latest_prices.c.product_id.is_(None))
+
+                if min_price is not None:
+                    query = query.where(latest_prices.c.current_price >= min_price)
+                    count_query = count_query.where(latest_prices.c.current_price >= min_price)
+
+                if max_price is not None:
+                    query = query.where(latest_prices.c.current_price <= max_price)
+                    count_query = count_query.where(latest_prices.c.current_price <= max_price)
             
             # Get total count
             count_result = await db.execute(select(func.count()).select_from(count_query.subquery()))
