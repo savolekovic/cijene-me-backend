@@ -12,7 +12,11 @@ from app.services.product_entry_service import ProductEntryService
 from dependency_injector.wiring import Provide, inject
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.database.database import get_db
-from app.api.responses.product_entry import ProductEntryWithDetails, PaginatedProductEntryResponse
+from app.api.responses.product_entry import (
+    ProductEntryWithDetails, 
+    PaginatedProductEntryResponse,
+    ProductPriceStatistics
+)
 from datetime import datetime
 
 logger = get_logger(__name__)
@@ -270,3 +274,59 @@ async def delete_product_entry(
 ):
     await product_entry_service.delete_entry(entry_id, db)
     return {"message": "Product entry deleted successfully"}
+
+@router.get("/product/{product_id}/statistics",
+    response_model=ProductPriceStatistics,
+    summary="Get price statistics for a product",
+    description="Get price statistics including lowest, highest, average, and latest prices for a specific product.",
+    responses={
+        404: {
+            "description": "Not found",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Not found error",
+                        "message": "Product not found"
+                    }
+                }
+            }
+        },
+        200: {
+            "description": "Successfully retrieved price statistics",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "lowest_price": 1.99,
+                        "highest_price": 3.99,
+                        "average_price": 2.99,
+                        "latest_price": 3.49,
+                        "total_entries": 10,
+                        "first_entry_date": "2024-01-01T00:00:00",
+                        "latest_entry_date": "2024-01-31T00:00:00",
+                        "price_change": 1.50,
+                        "price_change_percentage": 75.0
+                    }
+                }
+            }
+        }
+    }
+)
+@cache(expire=settings.CACHE_TIME_SHORT, namespace="product_statistics")
+@inject
+async def get_product_price_statistics(
+    product_id: int,
+    product_entry_service: ProductEntryService = Depends(Provide[Container.product_entry_service]),
+    db: AsyncSession = Depends(get_db)
+) -> ProductPriceStatistics:
+    """
+    Get comprehensive price statistics for a specific product.
+    
+    Args:
+        product_id: ID of the product to get statistics for
+        db: Database session
+        product_entry_service: Product entry service instance
+        
+    Returns:
+        ProductPriceStatistics containing various price statistics
+    """
+    return await product_entry_service.get_price_statistics(product_id, db)

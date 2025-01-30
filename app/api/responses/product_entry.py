@@ -36,5 +36,19 @@ class ProductEntryWithDetails(BaseModel):
     class Config:
         from_attributes = True
 
+class ProductPriceStatistics(BaseModel):
+    lowest_price: float | None
+    highest_price: float | None
+    average_price: float | None
+    latest_price: float | None
+    total_entries: int
+    first_entry_date: datetime | None
+    latest_entry_date: datetime | None
+    price_change: float | None
+    price_change_percentage: float | None
+
+    class Config:
+        from_attributes = True
+
 # Use the generic PaginatedResponse with ProductEntryWithDetails
 PaginatedProductEntryResponse = PaginatedResponse[ProductEntryWithDetails] 
