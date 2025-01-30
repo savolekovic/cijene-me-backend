@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from typing import Optional, List
 from app.api.responses.category import CategoryResponse
 from app.domain.models.product.product import Product
@@ -39,6 +39,7 @@ class PostgresProductRepository(ProductRepository):
             # Base query for data
             query = (
                 select(ProductModel, CategoryModel)
+                .distinct(ProductModel.id)
                 .outerjoin(CategoryModel)
             )
             
@@ -71,9 +72,15 @@ class PostgresProductRepository(ProductRepository):
                     select(
                         ProductEntryModel.product_id,
                         func.max(ProductEntryModel.created_at).label('latest_date'),
-                        ProductEntryModel.price.label('current_price')
+                        func.first_value(ProductEntryModel.price).over(
+                            partition_by=ProductEntryModel.product_id,
+                            order_by=ProductEntryModel.created_at.desc()
+                        ).label('current_price')
                     )
-                    .group_by(ProductEntryModel.product_id, ProductEntryModel.price)
+                    .group_by(
+                        ProductEntryModel.product_id,
+                        ProductEntryModel.price
+                    )
                     .alias('latest_prices')
                 )
 
@@ -117,9 +124,10 @@ class PostgresProductRepository(ProductRepository):
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
-            # Get paginated data
+            # Get paginated data and ensure uniqueness
+            query = query.distinct(ProductModel.id)
             result = await db.execute(query)
-            products = result.all()
+            products = result.unique().all()
             
             # Convert to response model
             product_list = []
