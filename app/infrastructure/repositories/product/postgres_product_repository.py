@@ -71,15 +71,12 @@ class PostgresProductRepository(ProductRepository):
                 latest_prices = (
                     select(
                         ProductEntryModel.product_id,
-                        func.max(ProductEntryModel.created_at).label('latest_date'),
-                        func.first_value(ProductEntryModel.price).over(
-                            partition_by=ProductEntryModel.product_id,
-                            order_by=ProductEntryModel.created_at.desc()
-                        ).label('current_price')
+                        ProductEntryModel.price.label('current_price')
                     )
-                    .group_by(
+                    .distinct(ProductEntryModel.product_id)
+                    .order_by(
                         ProductEntryModel.product_id,
-                        ProductEntryModel.price
+                        ProductEntryModel.created_at.desc()
                     )
                     .alias('latest_prices')
                 )
