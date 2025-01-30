@@ -55,7 +55,9 @@ logger = get_logger(__name__)
 ALLOWED_ORIGINS: List[str] = [
     "http://localhost:3000",
     "https://cijene-me-admin.vercel.app",
-    "https://cijene-me-admin-*.vercel.app"
+    "https://cijene-me-admin-*.vercel.app",
+    "https://cijene-me-user.vercel.app",
+    "https://cijene-me-user-*.vercel.app"
 ]
 
 app = FastAPI(
