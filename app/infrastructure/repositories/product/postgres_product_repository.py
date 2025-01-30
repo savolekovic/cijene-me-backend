@@ -39,7 +39,6 @@ class PostgresProductRepository(ProductRepository):
             # Base query for data
             query = (
                 select(ProductModel, CategoryModel)
-                .distinct(ProductModel.id)
                 .outerjoin(CategoryModel)
             )
             
@@ -73,6 +72,7 @@ class PostgresProductRepository(ProductRepository):
                         ProductEntryModel.product_id,
                         ProductEntryModel.price.label('current_price')
                     )
+                    .select_from(ProductEntryModel)
                     .distinct(ProductEntryModel.product_id)
                     .order_by(
                         ProductEntryModel.product_id,
@@ -113,16 +113,15 @@ class PostgresProductRepository(ProductRepository):
             # Add ordering
             order_column = getattr(ProductModel, order_by, ProductModel.name)
             if order_direction.lower() == "desc":
-                query = query.order_by(desc(order_column))
+                query = query.order_by(ProductModel.id, desc(order_column))
             else:
-                query = query.order_by(asc(order_column))
+                query = query.order_by(ProductModel.id, asc(order_column))
             
             # Add pagination
             offset = (page - 1) * per_page
             query = query.offset(offset).limit(per_page)
             
-            # Get paginated data and ensure uniqueness
-            query = query.distinct(ProductModel.id)
+            # Get paginated data
             result = await db.execute(query)
             products = result.unique().all()
             
