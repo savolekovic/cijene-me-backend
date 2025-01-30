@@ -167,7 +167,7 @@ class ProductEntryService:
         try:
             logger.info(f"Calculating price statistics for product: {product_id}")
             
-            # Fetch all entries for the product, ordered by created_at
+            # Fetch all entries for the product
             entries = await self.product_entry_repo.get_by_product(product_id, db)
             
             if not entries:
@@ -185,29 +185,29 @@ class ProductEntryService:
             
             # Sort entries by created_at to ensure correct order
             sorted_entries = sorted(entries, key=lambda x: x.created_at)
-            prices = [entry.price for entry in sorted_entries]
+            prices = [float(entry.price) for entry in sorted_entries]
             
             # Basic statistics
             lowest_price = min(prices)
             highest_price = max(prices)
             average_price = sum(prices) / len(prices)
-            latest_price = sorted_entries[-1].price
-            first_price = sorted_entries[0].price
+            latest_price = prices[-1]
+            first_price = prices[0]
             
             # Calculate price change
             price_change = latest_price - first_price
             price_change_percentage = (price_change / first_price) * 100 if first_price > 0 else 0
             
             return {
-                "lowest_price": float(lowest_price),
-                "highest_price": float(highest_price),
-                "average_price": round(float(average_price), 2),
-                "latest_price": float(latest_price),
+                "lowest_price": lowest_price,
+                "highest_price": highest_price,
+                "average_price": round(average_price, 2),
+                "latest_price": latest_price,
                 "total_entries": len(entries),
-                "first_entry_date": sorted_entries[0].created_at.isoformat(),
-                "latest_entry_date": sorted_entries[-1].created_at.isoformat(),
-                "price_change": round(float(price_change), 2),
-                "price_change_percentage": round(float(price_change_percentage), 2)
+                "first_entry_date": sorted_entries[0].created_at,
+                "latest_entry_date": sorted_entries[-1].created_at,
+                "price_change": round(price_change, 2),
+                "price_change_percentage": round(price_change_percentage, 2)
             }
         except Exception as e:
             logger.error(f"Error calculating price statistics for product {product_id}: {str(e)}")

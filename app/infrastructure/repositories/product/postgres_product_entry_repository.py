@@ -132,21 +132,22 @@ class PostgresProductEntryRepository(ProductEntryRepository):
             logger.error(f"Error getting product entry by product and store: {str(e)}")
             raise DatabaseError(f"Failed to get product entry by product and store: {str(e)}")
 
-    async def get_by_product(self, product_id: int, db: AsyncSession) -> Optional[ProductEntry]:
+    async def get_by_product(self, product_id: int, db: AsyncSession) -> List[ProductEntry]:
         try:
             result = await db.execute(
                 select(ProductEntryModel).where(ProductEntryModel.product_id == product_id)
             )
-            product_entry = result.scalar_one_or_none()
-            if product_entry:
-                return ProductEntry(
-                    id=product_entry.id,
-                    price=product_entry.price,
-                    product_id=product_entry.product_id,
-                    store_location_id=product_entry.store_location_id,
-                    created_at=product_entry.created_at
-                )
-            return None
+            entries = result.scalars().all()
+            return [
+                ProductEntry(
+                    id=entry.id,
+                    price=entry.price,
+                    product_id=entry.product_id,
+                    store_brand_id=entry.store_brand_id,
+                    store_location_id=entry.store_location_id,
+                    created_at=entry.created_at
+                ) for entry in entries
+            ]
         except Exception as e:
             logger.error(f"Error getting product entry by product: {str(e)}")
             raise DatabaseError(f"Failed to get product entry by product: {str(e)}")
