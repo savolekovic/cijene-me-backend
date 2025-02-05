@@ -113,9 +113,12 @@ class PostgresProductRepository(ProductRepository):
             # Add ordering
             order_column = getattr(ProductModel, order_by, ProductModel.name)
             if order_direction.lower() == "desc":
-                query = query.order_by(desc(order_column), ProductModel.id)
+                query = query.order_by(desc(order_column))
             else:
-                query = query.order_by(asc(order_column), ProductModel.id)
+                query = query.order_by(asc(order_column))
+            
+            # Add a secondary sort by ID to ensure consistent ordering
+            query = query.order_by(ProductModel.id)
             
             # Add pagination
             offset = (page - 1) * per_page
